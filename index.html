@@ -3,1287 +3,1090 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Behavioral Experiment</title>
+  <title>Risk Task Experiment</title>
   <style>
-    :root {
-      --light-blue: #B3CEE5;
-      --dark-blue: #57B9FF;
-      --black: #000000;
-      --white: #FFFFFF;
-      --red: #FF0000;
-      --yellow: #FFD700;
-      --shadow: 0 12px 35px rgba(0,0,0,0.08);
+    :root{
+      --light-blue:#B3CEE5;
+      --dark-blue:#57B9FF;
+      --black:#000000;
+      --white:#FFFFFF;
+      --red:#FF0000;
+      --yellow:#FFD700;
+      --fade-ms:500ms;
     }
 
-    * { box-sizing: border-box; }
-    html, body {
-      margin: 0;
-      padding: 0;
-      width: 100%;
-      height: 100%;
-      background: #fff;
-      overflow: hidden;
+    *{box-sizing:border-box}
+    html,body{
+      margin:0;
+      padding:0;
+      width:100%;
+      height:100%;
+      background:#fff;
       font-family: Arial, Helvetica, sans-serif;
-      color: #000;
+      color:#000;
+      overflow:hidden;
     }
 
-    #app {
-      position: relative;
-      width: 100vw;
-      height: 100vh;
-      background: #fff;
-      overflow: hidden;
+    body.fade-out{ opacity:0; transition:opacity var(--fade-ms) ease; }
+    body.fade-in{ opacity:1; transition:opacity var(--fade-ms) ease; }
+
+    #app{
+      position:relative;
+      width:100vw;
+      height:100vh;
+      background:#fff;
+      overflow:hidden;
     }
 
-    .screen {
-      position: absolute;
-      inset: 0;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 450ms ease;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      background: #fff;
+    .center-wrap{
+      position:absolute;
+      inset:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
     }
 
-    .screen.active {
-      opacity: 1;
-      pointer-events: auto;
+    .card{
+      background:var(--light-blue);
+      border-radius:24px;
+      padding:28px 32px;
+      max-width:760px;
+      text-align:center;
+      line-height:1.6;
+      box-shadow:0 8px 20px rgba(0,0,0,0.08);
     }
 
-    .center-wrap {
-      width: min(92vw, 900px);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 24px;
+    .btn{
+      display:inline-block;
+      margin-top:18px;
+      padding:14px 28px;
+      border:none;
+      border-radius:18px;
+      background:var(--dark-blue);
+      color:#fff;
+      font-size:18px;
+      font-weight:700;
+      cursor:pointer;
+      transition:transform .18s ease, box-shadow .18s ease;
+      box-shadow:0 6px 14px rgba(0,0,0,0.12);
+    }
+    .btn:hover{
+      transform:scale(1.06);
     }
 
-    .panel {
-      width: 100%;
-      max-width: 760px;
-      background: var(--light-blue);
-      border-radius: 24px;
-      box-shadow: var(--shadow);
-      padding: 34px 32px 28px;
-      text-align: center;
-      line-height: 1.65;
+    .input{
+      margin-top:14px;
+      width:100%;
+      max-width:360px;
+      padding:12px 14px;
+      font-size:16px;
+      border:2px solid #000;
+      border-radius:14px;
+      outline:none;
+      background:#fff;
     }
 
-    .panel h1, .panel p {
-      margin: 0 0 16px 0;
+    .message-only{
+      position:absolute;
+      inset:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+      padding:30px;
+      font-size:30px;
+      line-height:1.5;
+      font-weight:600;
+      background:#fff;
+      cursor:pointer;
     }
 
-    .panel h1 {
-      font-size: clamp(30px, 4vw, 40px);
+    /* Choice screens */
+    .choice-screen{
+      position:absolute;
+      inset:0;
+      background:#fff;
+      overflow:hidden;
     }
 
-    .panel p {
-      font-size: clamp(18px, 2vw, 22px);
+    .choice-halves{
+      position:absolute;
+      inset:0 0 120px 0;
+      display:flex;
     }
 
-    .text-input {
-      width: min(420px, 80%);
-      padding: 14px 16px;
-      font-size: 18px;
-      border: 2px solid #000;
-      border-radius: 14px;
-      outline: none;
-      margin: 8px auto 18px;
-      display: block;
-      background: #fff;
+    .half{
+      flex:1;
+      position:relative;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      transition:background-color .35s ease, opacity .45s ease;
+      cursor:pointer;
+      user-select:none;
     }
 
-    .btn {
-      border: none;
-      background: var(--dark-blue);
-      color: #fff;
-      padding: 14px 28px;
-      border-radius: 16px;
-      font-size: 20px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: transform 180ms ease, opacity 180ms ease;
-      min-width: 170px;
+    .half:hover{
+      background:rgba(179,206,229,0.55);
     }
 
-    .btn:hover:not(:disabled) {
-      transform: scale(1.05);
+    .half.disabled{
+      pointer-events:none;
     }
 
-    .btn:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
+    .divider{
+      position:absolute;
+      top:0;
+      bottom:120px;
+      left:50%;
+      width:3px;
+      background:#000;
+      transform:translateX(-50%);
+      z-index:5;
     }
 
-    .status-text {
-      margin-top: 12px;
-      min-height: 22px;
-      font-size: 16px;
+    .option-box{
+      text-align:center;
+      transition:opacity .45s ease;
     }
 
-    .error-text {
-      color: #FF0000;
-      font-weight: 700;
+    .option-title{
+      font-size:58px;
+      font-weight:800;
+      margin-bottom:10px;
     }
 
-    .task-screen-inner {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      flex-direction: column;
+    .option-line{
+      font-size:34px;
+      font-weight:600;
+      line-height:1.35;
     }
 
-    .task-main-region {
-      position: relative;
-      flex: 1;
-      overflow: hidden;
+    .feedback{
+      position:absolute;
+      inset:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:64px;
+      font-weight:800;
+      color:#000;
+      opacity:0;
+      transition:opacity .35s ease;
+      pointer-events:none;
+      z-index:6;
     }
 
-    .choice-stage {
-      position: absolute;
-      inset: 0;
-      opacity: 1;
-      transition: opacity 180ms ease;
+    .feedback.show{
+      opacity:1;
     }
 
-    .choice-stage.hidden {
-      opacity: 0;
-      pointer-events: none;
+    .fade-choices .option-box{
+      opacity:0;
     }
 
-    .divider {
-      position: absolute;
-      left: 50%;
-      top: 12%;
-      bottom: 12%;
-      width: 2px;
-      background: #000;
-      transform: translateX(-50%);
-      z-index: 5;
+    /* Bottom ranking panel */
+    .ranking-panel{
+      position:absolute;
+      left:50%;
+      bottom:18px;
+      transform:translateX(-50%);
+      width:min(1040px,92vw);
+      min-height:90px;
+      background:#fff;
+      border:3px solid #000;
+      border-radius:18px;
+      z-index:20;
+      padding:10px 16px 14px;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+      gap:8px;
     }
 
-    .choice-wrapper {
-      position: absolute;
-      inset: 0;
-      display: flex;
+    .ranking-title{
+      text-align:center;
+      font-weight:800;
+      font-size:20px;
+      letter-spacing:.5px;
     }
 
-    .choice-half {
-      position: relative;
-      flex: 1;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      cursor: pointer;
-      transition: background-color 180ms ease;
-      user-select: none;
+    .ranking-list{
+      display:flex;
+      justify-content:center;
+      gap:22px;
+      flex-wrap:wrap;
+      min-height:26px;
+      font-size:20px;
+      font-weight:700;
     }
 
-    .choice-half:hover {
-      background: rgba(179, 206, 229, 0.75);
+    .rank-item.me{
+      color:var(--red);
     }
 
-    .choice-half.disabled {
-      pointer-events: none;
-      cursor: default;
+    .total-points{
+      text-align:center;
+      font-size:28px;
+      font-weight:800;
     }
 
-    .choice-content {
-      text-align: center;
-      padding: 24px;
-      z-index: 3;
+    /* Dual-task digit circle */
+    .digit-circle{
+      position:absolute;
+      left:50%;
+      top:50%;
+      transform:translate(-50%,-50%);
+      width:130px;
+      height:130px;
+      border:3px solid #000;
+      border-radius:50%;
+      background:#fff;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:56px;
+      font-weight:800;
+      z-index:15;
+      user-select:none;
     }
 
-    .option-label {
-      font-size: clamp(60px, 8vw, 92px);
-      font-weight: 800;
-      margin-bottom: 16px;
+    .digit-circle.shake{
+      animation:shake .36s linear;
     }
 
-    .option-points {
-      font-size: clamp(28px, 4vw, 40px);
-      font-weight: 700;
-      margin-bottom: 10px;
+    @keyframes shake{
+      0%{ transform:translate(-50%,-50%) translateX(0); }
+      20%{ transform:translate(-50%,-50%) translateX(-8px); }
+      40%{ transform:translate(-50%,-50%) translateX(8px); }
+      60%{ transform:translate(-50%,-50%) translateX(-6px); }
+      80%{ transform:translate(-50%,-50%) translateX(6px); }
+      100%{ transform:translate(-50%,-50%) translateX(0); }
     }
 
-    .option-prob {
-      font-size: clamp(24px, 3vw, 34px);
-      font-weight: 600;
+    /* Final leaderboard */
+    #fireworks{
+      position:absolute;
+      inset:0;
+      z-index:1;
+      pointer-events:none;
     }
 
-    .feedback {
-      position: absolute;
-      top: 68%;
-      transform: translate(-50%, -50%);
-      font-size: clamp(34px, 4vw, 52px);
-      font-weight: 800;
-      opacity: 0;
-      transition: opacity 120ms ease, transform 120ms ease;
-      z-index: 7;
-      pointer-events: none;
+    .final-wrap{
+      position:absolute;
+      inset:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+      z-index:2;
     }
 
-    .feedback.visible {
-      opacity: 1;
-      transform: translate(-50%, -56%);
+    .final-card{
+      width:min(760px,92vw);
+      max-height:86vh;
+      overflow:auto;
+      background:#fff;
+      border:3px solid #000;
+      border-radius:22px;
+      padding:24px 24px 18px;
+      text-align:center;
+      box-shadow:0 12px 24px rgba(0,0,0,0.1);
     }
 
-    .feedback.left { left: 25%; }
-    .feedback.right { left: 75%; }
-
-    .digit-circle {
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      width: min(15vw, 130px);
-      height: min(15vw, 130px);
-      min-width: 90px;
-      min-height: 90px;
-      transform: translate(-50%, -50%);
-      border: 2px solid #000;
-      border-radius: 50%;
-      background: #fff;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-size: clamp(34px, 4vw, 52px);
-      font-weight: 800;
-      z-index: 8;
+    .final-rank{
+      font-size:28px;
+      font-weight:800;
+      margin-bottom:14px;
     }
 
-    .shake {
-      animation: shake 320ms ease;
+    .final-title{
+      font-size:34px;
+      font-weight:900;
+      margin-bottom:16px;
     }
 
-    @keyframes shake {
-      0% { transform: translate(-50%, -50%) translateX(0); }
-      20% { transform: translate(-50%, -50%) translateX(-8px); }
-      40% { transform: translate(-50%, -50%) translateX(8px); }
-      60% { transform: translate(-50%, -50%) translateX(-6px); }
-      80% { transform: translate(-50%, -50%) translateX(6px); }
-      100% { transform: translate(-50%, -50%) translateX(0); }
+    .leaderboard-list{
+      text-align:left;
+      margin:0 auto 18px;
+      max-width:540px;
+      padding:0;
+      list-style:none;
     }
 
-    .ranking-wrap {
-      height: 180px;
-      padding: 0 20px 20px;
-      display: flex;
-      align-items: flex-end;
-      justify-content: center;
-      z-index: 9;
+    .leaderboard-item{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:20px;
+      padding:12px 16px;
+      margin-bottom:10px;
+      border:2px solid #000;
+      border-radius:14px;
+      font-size:22px;
+      font-weight:700;
+      background:#fff;
     }
 
-    .ranking-panel {
-      width: min(1000px, 95vw);
-      background: #fff;
-      border: 2px solid #000;
-      border-radius: 18px;
-      padding: 14px 18px 16px;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+    .leaderboard-item.top3{
+      background:rgba(255,215,0,.45);
     }
 
-    .ranking-title {
-      text-align: center;
-      font-size: 22px;
-      font-weight: 800;
-      margin-bottom: 10px;
+    .leaderboard-item.me{
+      color:var(--red);
+      border-color:var(--red);
     }
 
-    .ranking-row {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 14px;
-      flex-wrap: wrap;
-      min-height: 38px;
-      margin-bottom: 10px;
+    .final-note{
+      font-size:24px;
+      font-weight:700;
+      line-height:1.45;
+      margin-top:8px;
     }
 
-    .score-pill {
-      border: 2px solid #000;
-      border-radius: 999px;
-      padding: 6px 14px;
-      min-width: 90px;
-      text-align: center;
-      font-weight: 700;
-      background: #fff;
-    }
-
-    .score-pill.current {
-      color: #FF0000;
-      border-color: #FF0000;
-    }
-
-    .total-line {
-      text-align: center;
-      font-size: 28px;
-      font-weight: 800;
-    }
-
-    .click-anywhere-message {
-      position: absolute;
-      inset: 0;
-      background: #fff;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      text-align: center;
-      padding: 30px;
-      font-size: clamp(24px, 3vw, 38px);
-      font-weight: 700;
-      line-height: 1.5;
-      cursor: pointer;
-      z-index: 20;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 400ms ease;
-    }
-
-    .click-anywhere-message.show {
-      opacity: 1;
-      pointer-events: auto;
-    }
-
-    #fireworksCanvas {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 0;
-      background: #fff;
-    }
-
-    .final-wrap {
-      position: absolute;
-      inset: 0;
-      z-index: 2;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 26px;
-    }
-
-    .final-panel {
-      width: min(920px, 95vw);
-      max-height: 88vh;
-      overflow: auto;
-      background: #fff;
-      border: 2px solid #000;
-      border-radius: 24px;
-      padding: 26px 24px 22px;
-      box-shadow: 0 16px 32px rgba(0,0,0,0.08);
-    }
-
-    .final-header {
-      text-align: center;
-      margin-bottom: 18px;
-    }
-
-    .final-header h2 {
-      margin: 0 0 8px 0;
-      font-size: clamp(28px, 4vw, 40px);
-    }
-
-    .final-header p {
-      margin: 0;
-      font-size: clamp(18px, 2vw, 22px);
-      font-weight: 700;
-    }
-
-    .leaderboard-title {
-      text-align: center;
-      font-size: 28px;
-      font-weight: 800;
-      margin: 18px 0 16px;
-    }
-
-    .leaderboard-list {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      margin-bottom: 24px;
-    }
-
-    .leaderboard-item {
-      display: grid;
-      grid-template-columns: 90px 1fr 160px;
-      gap: 12px;
-      align-items: center;
-      border: 2px solid #000;
-      border-radius: 14px;
-      padding: 12px 14px;
-      font-size: 19px;
-      font-weight: 700;
-      background: #fff;
-    }
-
-    .leaderboard-item.top3 {
-      background: rgba(255, 215, 0, 0.55);
-    }
-
-    .leaderboard-item.current-user {
-      border-color: #FF0000;
-      color: #FF0000;
-      box-shadow: inset 0 0 0 2px rgba(255,0,0,0.15);
-    }
-
-    .leaderboard-item.top3.current-user {
-      background: linear-gradient(90deg, rgba(255,215,0,0.55), rgba(255,0,0,0.10));
-    }
-
-    .leaderboard-rank, .leaderboard-id, .leaderboard-points {
-      text-align: center;
-    }
-
-    .final-thanks {
-      text-align: center;
-      font-size: clamp(20px, 2vw, 26px);
-      font-weight: 700;
-      line-height: 1.5;
+    .small{
+      font-size:15px;
+      opacity:.88;
     }
   </style>
 </head>
-<body>
+<body class="fade-in">
   <div id="app"></div>
 
   <script>
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycby47bPuq4DwmWNW1NbPY8aeonWq_nPkJHTTzIJETI4X8udxnyXBwwp57ZloG06yd-FnNg/exec";
-
-    const CONFIG = {
-      stPracticeTrials: 3,
-      mtPracticeTrials: 3,
-      formalTrialsPerTask: 20,
-      optionA: { points: 10, successProb: 0.8 },
-      optionB: { minX: 1, maxX: 60, successProb: 0.2 },
-      digitIntervalMs: 1000,
-      feedbackDisplayMs: 350,
-      fadeBetweenTrialsMs: 120,
-      leaderboardRefreshMs: 3000
-    };
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbw2PUodouQhTa_zoVS301n-5wh1w9T2gqWXEK7-G6cw03dlrpie7FjxLTR2ott6IVQ55Q/exec";
 
     const state = {
-      assignedParticipantId: null,
-      assignedTaskOrder: null,
-      currentTotalPoints: 0,
-      currentTask: null,
-      currentTrial: 0,
-      enteredText: '',
-      isTransitioning: false,
-      submittedTrialKeys: new Set(),
-
+      typedId: "",
+      participantId: "",
+      taskOrder: "",
+      totalPoints: 0,
+      currentTask: "",
+      currentTaskTrial: 0,
+      firstTask: "",
+      secondTask: "",
+      currentX: 0,
+      isPractice: false,
+      globalLeaderboard: [],
+      fullLeaderboard: [],
       digitTimer: null,
-      digitKeyListener: null,
       currentDigit: null,
-      digitThreeHandled: false,
-      digitCircleEl: null,
-
-      leaderboardPollTimer: null,
-      latestRebuiltLeaderboard: [],
-
-      fireworksAnimFrame: null
+      awaitingThree: false,
+      circleEl: null,
+      finishedMainTasks: 0
     };
 
-    const app = document.getElementById('app');
+    const app = document.getElementById("app");
 
-    function randomInt(min, max) {
+    /* ---------------------- Helpers ---------------------- */
+
+    function randInt(min, max){
       return Math.floor(Math.random() * (max - min + 1)) + min;
     }
 
-    function sleep(ms) {
-      return new Promise(resolve => setTimeout(resolve, ms));
+    function randomX(){
+      return randInt(1, 60);
     }
 
-    function escapeHtml(str) {
-      return String(str)
-        .replaceAll('&', '&amp;')
-        .replaceAll('<', '&lt;')
-        .replaceAll('>', '&gt;')
-        .replaceAll('"', '&quot;')
-        .replaceAll("'", '&#39;');
+    function fadeTo(renderFn){
+      document.body.classList.remove("fade-in");
+      document.body.classList.add("fade-out");
+      setTimeout(() => {
+        renderFn();
+        document.body.classList.remove("fade-out");
+        document.body.classList.add("fade-in");
+      }, 260);
     }
 
-    function softRandomTaskOrder() {
-      return Math.random() < 0.5 ? 'ST_First' : 'MT_First';
+    function safeText(s){
+      return String(s ?? "").replace(/[&<>"']/g, m => ({
+        "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;"
+      }[m]));
     }
 
-    function awardPoints(choice, xValue) {
-      if (choice === 'A') {
-        return Math.random() < CONFIG.optionA.successProb ? CONFIG.optionA.points : 0;
-      }
-      return Math.random() < CONFIG.optionB.successProb ? xValue : 0;
-    }
-
-    function buildTrialKey(task, trialIndex) {
-      return `${state.assignedParticipantId || 'NONE'}__${task}__${trialIndex}`;
-    }
-
-    function clearApp() {
-      stopDigitTask();
-      stopLeaderboardPolling();
-      stopFireworks();
-      app.innerHTML = '';
-    }
-
-    function createScreen() {
-      const screen = document.createElement('div');
-      screen.className = 'screen';
-      return screen;
-    }
-
-    function mountScreen(screen) {
-      app.appendChild(screen);
-      requestAnimationFrame(() => screen.classList.add('active'));
-    }
-
-    async function fadeOutAndReplace(currentScreen, nextBuilder) {
-      if (state.isTransitioning) return;
-      state.isTransitioning = true;
-      if (currentScreen) {
-        currentScreen.classList.remove('active');
-        await sleep(450);
-      }
-      clearApp();
-      nextBuilder();
-      state.isTransitioning = false;
-    }
-
-    async function postJSON(payload) {
+    async function apiInitParticipant(){
       const res = await fetch(WEB_APP_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(payload)
+        method:"POST",
+        headers:{ "Content-Type":"text/plain;charset=utf-8" },
+        body: JSON.stringify({
+          action: "init_participant"
+        })
       });
-      if (!res.ok) throw new Error(`Network error: ${res.status}`);
-      return res.json();
+      return await res.json();
     }
 
-    async function getJSON(params) {
-      const url = new URL(WEB_APP_URL);
-      Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
-      const res = await fetch(url.toString(), { method: 'GET' });
-      if (!res.ok) throw new Error(`Network error: ${res.status}`);
-      return res.json();
-    }
-
-    async function registerParticipant() {
-      const data = await postJSON({ action: 'register_participant' });
-      if (!data.success || !data.Participant_ID) {
-        throw new Error(data.error || 'Failed to register participant.');
-      }
-      state.assignedParticipantId = String(data.Participant_ID);
-      return state.assignedParticipantId;
-    }
-
-    async function saveFormalTrial({ task, trialIndex, choseA, xValue, pointsAwarded }) {
-      const key = buildTrialKey(task, trialIndex);
-      if (state.submittedTrialKeys.has(key)) {
-        throw new Error('Duplicate trial submission prevented.');
-      }
-
-      const data = await postJSON({
-        action: 'save_trial',
-        Participant_ID: state.assignedParticipantId,
-        Task: task,
-        Trial_Index: trialIndex,
-        Chose_A: choseA,
-        X_Value: xValue,
-        Points_Awarded: pointsAwarded,
-        Task_Order: state.assignedTaskOrder
+    async function apiSaveTrial(payload){
+      const res = await fetch(WEB_APP_URL, {
+        method:"POST",
+        headers:{ "Content-Type":"text/plain;charset=utf-8" },
+        body: JSON.stringify({
+          action: "save_trial",
+          ...payload
+        })
       });
-
-      if (!data.success) throw new Error(data.error || 'Failed to save trial.');
-      state.submittedTrialKeys.add(key);
-      return data;
+      return await res.json();
     }
 
-    async function fetchAllRawData() {
-      const data = await getJSON({ action: 'get_all_raw_data' });
-      if (!data.success) throw new Error(data.error || 'Failed to fetch raw data.');
-      return Array.isArray(data.raw_data) ? data.raw_data : [];
+    async function apiGetLeaderboard(){
+      const res = await fetch(WEB_APP_URL + "?mode=leaderboard");
+      return await res.json();
     }
 
-    async function fetchAllRankingRows() {
-      const data = await getJSON({ action: 'get_ranking', all: '1' });
-      if (!data.success) throw new Error(data.error || 'Failed to fetch ranking.');
-      return Array.isArray(data.ranking) ? data.ranking : [];
+    async function apiGetAllTrials(){
+      const res = await fetch(WEB_APP_URL + "?mode=all_trials");
+      return await res.json();
     }
 
-    async function rebuildLeaderboardFromRawData() {
-      const rows = await fetchAllRawData();
-
-      const participantMap = new Map();
-
-      for (const row of rows) {
-        const pid = String(row.Participant_ID || '');
-        const task = String(row.Task || '');
-        const trialIndex = Number(row.Trial_Index);
-        const points = Number(row.Points_Awarded) || 0;
-
-        if (!pid || !task || !trialIndex) continue;
-
-        if (!participantMap.has(pid)) {
-          participantMap.set(pid, {
-            Participant_ID: pid,
-            ST: new Map(),
-            MT: new Map()
-          });
-        }
-
-        const p = participantMap.get(pid);
-        if (task === 'ST') p.ST.set(trialIndex, points);
-        if (task === 'MT') p.MT.set(trialIndex, points);
-      }
-
-      const completed = [];
-      for (const [pid, p] of participantMap.entries()) {
-        if (p.ST.size >= 20 && p.MT.size >= 20) {
-          let total = 0;
-          [...p.ST.entries()].sort((a,b)=>a[0]-b[0]).slice(0,20).forEach(x => total += x[1]);
-          [...p.MT.entries()].sort((a,b)=>a[0]-b[0]).slice(0,20).forEach(x => total += x[1]);
-          completed.push({ Participant_ID: pid, Total_Points: total });
-        }
-      }
-
-      completed.sort((a, b) => b.Total_Points - a.Total_Points);
-      state.latestRebuiltLeaderboard = completed;
-      return completed;
-    }
-
-    function mergeCurrentIntoTopFive(allCompletedRows) {
-      const list = (allCompletedRows || []).map(x => ({
-        Participant_ID: String(x.Participant_ID),
-        Total_Points: Number(x.Total_Points) || 0
-      }));
-
-      if (state.assignedParticipantId) {
-        const idx = list.findIndex(x => x.Participant_ID === state.assignedParticipantId);
-        if (idx >= 0) {
-          list[idx].Total_Points = state.currentTotalPoints;
-        } else {
-          list.push({
-            Participant_ID: state.assignedParticipantId,
-            Total_Points: state.currentTotalPoints
-          });
-        }
-      }
-
-      list.sort((a, b) => b.Total_Points - a.Total_Points);
-      return list.slice(0, 5);
-    }
-
-    function renderTopFive(rankingPanel, allCompletedRows) {
-      const topFive = mergeCurrentIntoTopFive(allCompletedRows);
-      const rowEl = rankingPanel.querySelector('.ranking-row');
-      const totalEl = rankingPanel.querySelector('.total-points-value');
-      rowEl.innerHTML = '';
-
-      topFive.forEach(item => {
-        const pill = document.createElement('div');
-        pill.className = 'score-pill' + (item.Participant_ID === state.assignedParticipantId ? ' current' : '');
-        pill.textContent = `${item.Total_Points}`;
-        rowEl.appendChild(pill);
-      });
-
-      totalEl.textContent = String(state.currentTotalPoints);
-    }
-
-    async function refreshTopFive(rankingPanel) {
-      try {
-        const rebuilt = await rebuildLeaderboardFromRawData();
-        renderTopFive(rankingPanel, rebuilt);
-      } catch (err) {
-        renderTopFive(rankingPanel, state.latestRebuiltLeaderboard || []);
-      }
-    }
-
-    function startLeaderboardPolling(rankingPanel) {
-      stopLeaderboardPolling();
-      refreshTopFive(rankingPanel);
-      state.leaderboardPollTimer = setInterval(() => {
-        refreshTopFive(rankingPanel);
-      }, CONFIG.leaderboardRefreshMs);
-    }
-
-    function stopLeaderboardPolling() {
-      if (state.leaderboardPollTimer) {
-        clearInterval(state.leaderboardPollTimer);
-        state.leaderboardPollTimer = null;
-      }
-    }
-
-    function attachDigitCircle(circleEl) {
-      state.digitCircleEl = circleEl;
-    }
-
-    function shakeDigitCircle() {
-      if (!state.digitCircleEl) return;
-      state.digitCircleEl.classList.remove('shake');
-      void state.digitCircleEl.offsetWidth;
-      state.digitCircleEl.classList.add('shake');
-    }
-
-    function onDigitTick() {
-      if (state.currentDigit === 3 && !state.digitThreeHandled) {
-        shakeDigitCircle();
-      }
-
-      state.currentDigit = randomInt(1, 9);
-      state.digitThreeHandled = false;
-
-      if (state.digitCircleEl) {
-        state.digitCircleEl.textContent = String(state.currentDigit);
-      }
-    }
-
-    function startDigitTask(circleEl) {
-      stopDigitTask();
-      attachDigitCircle(circleEl);
-
-      state.currentDigit = randomInt(1, 9);
-      state.digitThreeHandled = false;
-      circleEl.textContent = String(state.currentDigit);
-
-      state.digitKeyListener = function(event) {
-        if (event.code !== 'Space') return;
-        event.preventDefault();
-
-        if (state.currentDigit === 3) {
-          state.digitThreeHandled = true;
-        } else {
-          shakeDigitCircle();
-        }
-      };
-
-      window.addEventListener('keydown', state.digitKeyListener);
-      state.digitTimer = setInterval(onDigitTick, CONFIG.digitIntervalMs);
-    }
-
-    function stopDigitTask() {
-      if (state.digitTimer) {
+    function clearDigitTask(){
+      if(state.digitTimer){
         clearInterval(state.digitTimer);
         state.digitTimer = null;
       }
-      if (state.digitKeyListener) {
-        window.removeEventListener('keydown', state.digitKeyListener);
-        state.digitKeyListener = null;
-      }
+      window.removeEventListener("keydown", onDigitKeyDown);
       state.currentDigit = null;
-      state.digitThreeHandled = false;
-      state.digitCircleEl = null;
+      state.awaitingThree = false;
+      state.circleEl = null;
     }
 
-    function createRankingPanel() {
-      const wrap = document.createElement('div');
-      wrap.className = 'ranking-wrap';
-      wrap.innerHTML = `
+    function startDigitTask(circleEl){
+      clearDigitTask();
+      state.circleEl = circleEl;
+
+      function nextDigit(){
+        if(state.awaitingThree){
+          shakeCircle();
+        }
+        const d = randInt(0,9);
+        state.currentDigit = d;
+        state.awaitingThree = (d === 3);
+        circleEl.textContent = d;
+      }
+
+      nextDigit();
+      state.digitTimer = setInterval(nextDigit, 2000);
+      window.addEventListener("keydown", onDigitKeyDown);
+    }
+
+    function onDigitKeyDown(e){
+      if(e.code !== "Space") return;
+      e.preventDefault();
+
+      if(state.currentDigit === 3 && state.awaitingThree){
+        state.awaitingThree = false;
+      } else {
+        shakeCircle();
+      }
+    }
+
+    function shakeCircle(){
+      if(!state.circleEl) return;
+      state.circleEl.classList.remove("shake");
+      void state.circleEl.offsetWidth;
+      state.circleEl.classList.add("shake");
+    }
+
+    async function refreshTop5(){
+      try{
+        const data = await apiGetLeaderboard();
+        if(data && data.success){
+          state.globalLeaderboard = data.leaderboard || [];
+        }
+      }catch(err){
+        console.warn("Leaderboard fetch failed:", err);
+      }
+    }
+
+    function mergedTop5(){
+      const arr = [...state.globalLeaderboard.map(x => ({
+        Participant_ID: String(x.Participant_ID),
+        Total_Points: Number(x.Total_Points)
+      }))];
+
+      const existingIndex = arr.findIndex(x => x.Participant_ID === state.participantId);
+      if(existingIndex >= 0){
+        arr[existingIndex].Total_Points = Math.max(arr[existingIndex].Total_Points, state.totalPoints);
+      } else if(state.participantId){
+        arr.push({
+          Participant_ID: state.participantId,
+          Total_Points: state.totalPoints
+        });
+      }
+
+      arr.sort((a,b) => b.Total_Points - a.Total_Points);
+      return arr.slice(0,5);
+    }
+
+    function rankingPanelHTML(){
+      const top5 = mergedTop5();
+      const items = top5.map(item => {
+        const me = item.Participant_ID === state.participantId ? "me" : "";
+        return `<div class="rank-item ${me}">${safeText(item.Participant_ID)}: ${item.Total_Points}</div>`;
+      }).join("");
+
+      return `
         <div class="ranking-panel">
           <div class="ranking-title">TOP 5 RANKING</div>
-          <div class="ranking-row"></div>
-          <div class="total-line">Total Points: <span class="total-points-value">0</span></div>
+          <div class="ranking-list">${items || "<div>No scores yet</div>"}</div>
+          <div class="total-points">Total Points: ${state.totalPoints}</div>
         </div>
       `;
-      return wrap;
     }
 
-    function createChoiceStage(xValue, withCenterDigit = false) {
-      const stage = document.createElement('div');
-      stage.className = 'choice-stage';
-      stage.innerHTML = `
-        <div class="divider"></div>
-        <div class="choice-wrapper">
-          <div class="choice-half choice-half-left" data-choice="A">
-            <div class="choice-content">
-              <div class="option-label">A</div>
-              <div class="option-points">10 Points</div>
-              <div class="option-prob">80%</div>
+    function buildChoiceScreen({
+      showRanking = false,
+      dualTask = false,
+      practice = false,
+      taskName = "ST",
+      totalTrials = 3,
+      afterFinish
+    }){
+      clearDigitTask();
+      state.isPractice = practice;
+      state.currentTask = taskName;
+      state.currentTaskTrial = 1;
+      state.currentX = randomX();
+
+      app.innerHTML = `
+        <div class="choice-screen">
+          <div class="choice-halves">
+            <div class="half" id="leftHalf">
+              <div class="option-box" id="leftBox">
+                <div class="option-title">A</div>
+                <div class="option-line">10 Points</div>
+                <div class="option-line">80%</div>
+              </div>
+              <div class="feedback" id="leftFeedback"></div>
             </div>
-            <div class="feedback left"></div>
-          </div>
-          <div class="choice-half choice-half-right" data-choice="B">
-            <div class="choice-content">
-              <div class="option-label">B</div>
-              <div class="option-points">${xValue} Points</div>
-              <div class="option-prob">20%</div>
+            <div class="half" id="rightHalf">
+              <div class="option-box" id="rightBox">
+                <div class="option-title">B</div>
+                <div class="option-line"><span id="xDisplay">${state.currentX}</span> Points</div>
+                <div class="option-line">20%</div>
+              </div>
+              <div class="feedback" id="rightFeedback"></div>
             </div>
-            <div class="feedback right"></div>
           </div>
+
+          <div class="divider"></div>
+
+          ${dualTask ? `<div class="digit-circle" id="digitCircle">0</div>` : ""}
+          ${showRanking ? rankingPanelHTML() : ""}
         </div>
       `;
 
-      if (withCenterDigit) {
-        const digit = document.createElement('div');
-        digit.className = 'digit-circle';
-        digit.textContent = '1';
-        stage.appendChild(digit);
+      const leftHalf = document.getElementById("leftHalf");
+      const rightHalf = document.getElementById("rightHalf");
+      const leftFeedback = document.getElementById("leftFeedback");
+      const rightFeedback = document.getElementById("rightFeedback");
+      const xDisplay = document.getElementById("xDisplay");
+
+      if(dualTask){
+        const circle = document.getElementById("digitCircle");
+        startDigitTask(circle);
       }
 
-      return stage;
-    }
+      async function handleChoice(choice){
+        leftHalf.classList.add("disabled");
+        rightHalf.classList.add("disabled");
 
-    function showClickAnywhereMessage(container, message, onClick) {
-      const overlay = document.createElement('div');
-      overlay.className = 'click-anywhere-message';
-      overlay.innerHTML = `<div>${message}</div>`;
-      overlay.addEventListener('click', () => onClick(), { once: true });
-      container.appendChild(overlay);
-      requestAnimationFrame(() => overlay.classList.add('show'));
-    }
+        const choseA = choice === "A" ? 1 : 0;
+        const pointsAwarded = resolvePoints(choice, state.currentX);
 
-    async function runTaskBlock({ taskType, isPractice, withDigitTask, nextScreenBuilder }) {
-      clearApp();
-
-      const screen = createScreen();
-      const outer = document.createElement('div');
-      outer.className = 'task-screen-inner';
-
-      const mainRegion = document.createElement('div');
-      mainRegion.className = 'task-main-region';
-      outer.appendChild(mainRegion);
-
-      let rankingPanel = null;
-      if (!isPractice) {
-        rankingPanel = createRankingPanel();
-        outer.appendChild(rankingPanel);
-      }
-
-      screen.appendChild(outer);
-      mountScreen(screen);
-
-      if (!isPractice && rankingPanel) {
-        renderTopFive(rankingPanel, state.latestRebuiltLeaderboard || []);
-        startLeaderboardPolling(rankingPanel);
-      }
-
-      const totalTrials = isPractice
-        ? (taskType === 'ST' ? CONFIG.stPracticeTrials : CONFIG.mtPracticeTrials)
-        : CONFIG.formalTrialsPerTask;
-
-      let trialIndexWithinTask = 0;
-      let blockActive = true;
-      let choiceLocked = false;
-
-      async function finishPractice() {
-        blockActive = false;
-        if (withDigitTask) stopDigitTask();
-        showClickAnywhereMessage(
-          mainRegion,
-          `Well done! You've completed the practice section. Now click anywhere to move on to the main section.`,
-          async () => {
-            await fadeOutAndReplace(screen, nextScreenBuilder);
-          }
-        );
-      }
-
-      async function finishFormal() {
-        blockActive = false;
-        if (withDigitTask) stopDigitTask();
-        stopLeaderboardPolling();
-        await fadeOutAndReplace(screen, nextScreenBuilder);
-      }
-
-      async function presentTrial() {
-        if (!blockActive) return;
-
-        if (trialIndexWithinTask >= totalTrials) {
-          if (isPractice) return finishPractice();
-          return finishFormal();
+        if(choice === "A"){
+          leftFeedback.textContent = `+${pointsAwarded}`;
+          leftFeedback.classList.add("show");
+        } else {
+          rightFeedback.textContent = `+${pointsAwarded}`;
+          rightFeedback.classList.add("show");
         }
 
-        trialIndexWithinTask += 1;
-        state.currentTask = taskType;
-        state.currentTrial = trialIndexWithinTask;
-
-        const xValue = randomInt(CONFIG.optionB.minX, CONFIG.optionB.maxX);
-        const stage = createChoiceStage(xValue, withDigitTask);
-        mainRegion.appendChild(stage);
-
-        if (withDigitTask) {
-          const digitCircle = stage.querySelector('.digit-circle');
-          if (trialIndexWithinTask === 1) {
-            startDigitTask(digitCircle);
-          } else {
-            attachDigitCircle(digitCircle);
-            if (state.currentDigit === null) {
-              startDigitTask(digitCircle);
-            } else {
-              digitCircle.textContent = String(state.currentDigit);
-            }
+        if(!practice){
+          state.totalPoints += pointsAwarded;
+          if(showRanking){
+            updateRankingPanel();
           }
-        }
 
-        const left = stage.querySelector('.choice-half-left');
-        const right = stage.querySelector('.choice-half-right');
-        const leftFb = stage.querySelector('.feedback.left');
-        const rightFb = stage.querySelector('.feedback.right');
-
-        async function handleChoice(choice) {
-          if (choiceLocked || !blockActive) return;
-          choiceLocked = true;
-
-          left.classList.add('disabled');
-          right.classList.add('disabled');
-
-          const awarded = awardPoints(choice, xValue);
-          const choseA = choice === 'A' ? 1 : 0;
-          const chosenFb = choice === 'A' ? leftFb : rightFb;
-          chosenFb.textContent = `+${awarded}`;
-          chosenFb.classList.add('visible');
-
-          if (!isPractice) {
-            state.currentTotalPoints += awarded;
-            if (rankingPanel) renderTopFive(rankingPanel, state.latestRebuiltLeaderboard || []);
-
-            saveFormalTrial({
-              task: taskType,
-              trialIndex: trialIndexWithinTask,
-              choseA,
-              xValue,
-              pointsAwarded: awarded
-            }).then(async () => {
-              if (rankingPanel) {
-                await refreshTopFive(rankingPanel);
-              }
-            }).catch(err => {
-              alert(`Failed to save trial.\n${err.message}`);
+          try{
+            const result = await apiSaveTrial({
+              Participant_ID: state.participantId,
+              Task: taskName,
+              Trial_Index: state.currentTaskTrial,
+              Chose_A: choseA,
+              X_Value: state.currentX,
+              Points_Awarded: pointsAwarded,
+              Task_Order: state.taskOrder
             });
+
+            if(result && result.success){
+              state.totalPoints = Number(result.Total_Points ?? state.totalPoints);
+            }
+          }catch(err){
+            console.warn("save_trial failed:", err);
           }
 
-          await sleep(CONFIG.feedbackDisplayMs);
-          stage.classList.add('hidden');
-          await sleep(CONFIG.fadeBetweenTrialsMs);
-          stage.remove();
-          choiceLocked = false;
-          presentTrial();
+          await refreshTop5();
+          if(showRanking){
+            updateRankingPanel();
+          }
         }
 
-        left.addEventListener('click', () => handleChoice('A'));
-        right.addEventListener('click', () => handleChoice('B'));
+        setTimeout(() => {
+          document.querySelector(".choice-screen").classList.add("fade-choices");
+        }, 500);
+
+        setTimeout(async () => {
+          leftFeedback.classList.remove("show");
+          rightFeedback.classList.remove("show");
+
+          if(state.currentTaskTrial >= totalTrials){
+            clearDigitTask();
+            afterFinish();
+            return;
+          }
+
+          state.currentTaskTrial += 1;
+          state.currentX = randomX();
+          xDisplay.textContent = state.currentX;
+          document.querySelector(".choice-screen").classList.remove("fade-choices");
+          leftHalf.classList.remove("disabled");
+          rightHalf.classList.remove("disabled");
+        }, 1200);
       }
 
-      presentTrial();
+      leftHalf.addEventListener("click", () => handleChoice("A"));
+      rightHalf.addEventListener("click", () => handleChoice("B"));
+
+      function updateRankingPanel(){
+        const panel = document.querySelector(".ranking-panel");
+        if(panel){
+          panel.outerHTML = rankingPanelHTML();
+        }
+      }
     }
 
-    function createCenteredPanelScreen(innerHtml) {
-      const screen = createScreen();
-      screen.innerHTML = `
-        <div class="center-wrap">
-          <div class="panel">${innerHtml}</div>
-        </div>
-      `;
-      return screen;
+    function resolvePoints(choice, x){
+      if(choice === "A"){
+        return Math.random() < 0.8 ? 10 : 0;
+      } else {
+        return Math.random() < 0.2 ? x : 0;
+      }
     }
 
-    function showWelcomeScreen() {
-      const screen = createScreen();
-      screen.innerHTML = `
+    /* ---------------------- Screens ---------------------- */
+
+    function screen1(){
+      clearDigitTask();
+      app.innerHTML = `
         <div class="center-wrap">
-          <div class="panel">
-            <h1>Welcome to the experiment</h1>
-            <p>Please enter your Participant ID below</p>
-            <p>(we won't be able to see your ID, it's going to be completely anonymous)</p>
-            <input class="text-input" id="participantTextInput" type="text" placeholder="Enter any anonymous code you want" />
+          <div class="card">
+            <div style="font-size:34px;font-weight:800;">Welcome to the experiment</div>
+            <div style="font-size:22px;margin-top:8px;">Please enter your Participant ID below</div>
+            <div class="small">(we won't be able to see your ID, its going to be completely anonymous)</div>
+            <div style="display:flex;justify-content:center;">
+              <input class="input" id="typedIdInput" placeholder="Enter any ID you want" />
+            </div>
             <button class="btn" id="startBtn">Start</button>
-            <div class="status-text" id="welcomeStatus"></div>
           </div>
         </div>
       `;
-      mountScreen(screen);
 
-      const input = screen.querySelector('#participantTextInput');
-      const btn = screen.querySelector('#startBtn');
-      const status = screen.querySelector('#welcomeStatus');
-
-      btn.addEventListener('click', async () => {
-        if (state.isTransitioning) return;
+      document.getElementById("startBtn").addEventListener("click", async () => {
+        const btn = document.getElementById("startBtn");
         btn.disabled = true;
-        status.textContent = 'Starting experiment...';
+        state.typedId = document.getElementById("typedIdInput").value.trim();
 
-        try {
-          state.enteredText = input.value.trim();
-          await registerParticipant();
-          state.assignedTaskOrder = softRandomTaskOrder();
-          state.currentTotalPoints = 0;
-          state.submittedTrialKeys.clear();
-          state.latestRebuiltLeaderboard = await rebuildLeaderboardFromRawData();
+        try{
+          const init = await apiInitParticipant();
+          if(!init.success) throw new Error(init.error || "Initialization failed");
+          state.participantId = init.Participant_ID;
+          state.taskOrder = init.Task_Order;
+          state.firstTask = state.taskOrder === "ST_First" ? "ST" : "MT";
+          state.secondTask = state.firstTask === "ST" ? "MT" : "ST";
+          state.totalPoints = 0;
+          await refreshTop5();
 
-          await fadeOutAndReplace(screen, () => {
-            if (state.assignedTaskOrder === 'ST_First') {
-              showSTInstructionScreen1();
+          fadeTo(() => {
+            if(state.firstTask === "ST"){
+              screen2_1();
             } else {
-              showMTInstructionScreen2();
+              screen2_2();
             }
           });
-        } catch (err) {
+        }catch(err){
+          alert("Failed to initialize participant. Please try again.\n" + err);
           btn.disabled = false;
-          status.textContent = err.message || 'Could not start experiment.';
-          status.classList.add('error-text');
         }
       });
     }
 
-    function showSTInstructionScreen1() {
-      const screen = createCenteredPanelScreen(`
-        <p>In this experiment you are going to choose between Option A and Option B. The score for this option is shown below. The percentage indicates the probability that you will receive this score if you select this option.</p>
-        <p>Click "Start Practice" to start a few practice trials to get familiar with this!</p>
-        <button class="btn" id="startPracticeBtn">Start Practice</button>
-      `);
-      mountScreen(screen);
-      screen.querySelector('#startPracticeBtn').addEventListener('click', async () => {
-        await fadeOutAndReplace(screen, () => {
-          runTaskBlock({
-            taskType: 'ST',
-            isPractice: true,
-            withDigitTask: false,
-            nextScreenBuilder: showSTMainScreen1
-          });
-        });
+    // ST first flow
+    function screen2_1(){
+      app.innerHTML = `
+        <div class="center-wrap">
+          <div class="card">
+            <div style="font-size:22px;font-weight:700;">
+              In this experiment you are going to choose between Option A and Option B.
+              The score for this option is shown below. The percentage indicates the probability
+              that you will receive this score if you select this option.
+            </div>
+            <div style="font-size:22px;margin-top:10px;">
+              Click "Start Practice" to start a few practice trials to get familiar with this!
+            </div>
+            <button class="btn" id="goPractice">Start Practice</button>
+          </div>
+        </div>
+      `;
+      document.getElementById("goPractice").onclick = () => fadeTo(screen3_1);
+    }
+
+    function screen3_1(){
+      buildChoiceScreen({
+        showRanking:false,
+        dualTask:false,
+        practice:true,
+        taskName:"ST",
+        totalTrials:3,
+        afterFinish: () => {
+          fadeTo(() => practiceDoneMessage(screen4_1));
+        }
       });
     }
 
-    function showSTMainScreen1() {
-      runTaskBlock({
-        taskType: 'ST',
-        isPractice: false,
-        withDigitTask: false,
-        nextScreenBuilder: showTransitionToMTScreen1
+    function screen4_1(){
+      buildChoiceScreen({
+        showRanking:true,
+        dualTask:false,
+        practice:false,
+        taskName:"ST",
+        totalTrials:20,
+        afterFinish: () => {
+          fadeTo(screen5_1);
+        }
       });
     }
 
-    function showTransitionToMTScreen1() {
-      const screen = createCenteredPanelScreen(`
-        <p>Congratulations! You’ve completed Part 1. Now you’ll move on to Part 2.</p>
-        <p>Click "Start Practice" to start a few practice trials to get familiar with this!</p>
-        <button class="btn" id="startPracticeBtn">Start Practice</button>
-      `);
-      mountScreen(screen);
-      screen.querySelector('#startPracticeBtn').addEventListener('click', async () => {
-        await fadeOutAndReplace(screen, () => {
-          runTaskBlock({
-            taskType: 'MT',
-            isPractice: true,
-            withDigitTask: true,
-            nextScreenBuilder: showMTMainScreen1
-          });
-        });
+    function screen5_1(){
+      clearDigitTask();
+      app.innerHTML = `
+        <div class="message-only" id="nextMessage">
+          Congratulations! You’ve completed Part 1. Now click anywhere too move on to Part 2.
+        </div>
+      `;
+      document.getElementById("nextMessage").onclick = () => fadeTo(screen6_1);
+    }
+
+    function screen6_1(){
+      app.innerHTML = `
+        <div class="center-wrap">
+          <div class="card">
+            <div style="font-size:22px;font-weight:700;">
+              In this experiment you are going to choose between Option A and Option B.
+              The score for this option will be shown below. The percentage indicates the probability
+              that you will receive this score if you select this option.
+            </div>
+            <div style="font-size:22px;margin-top:10px;">
+              At the same time, numbers 1 through 9 will appear randomly in the center of the screen.
+              When you see the number 3, press the spacebar.
+            </div>
+            <div style="font-size:22px;margin-top:10px;">
+              Click "Start Practice" to start a few practice trials to get familiar with this!
+            </div>
+            <button class="btn" id="goPractice">Start Practice</button>
+          </div>
+        </div>
+      `;
+      document.getElementById("goPractice").onclick = () => fadeTo(screen7_1);
+    }
+
+    function screen7_1(){
+      buildChoiceScreen({
+        showRanking:true,
+        dualTask:true,
+        practice:true,
+        taskName:"MT",
+        totalTrials:3,
+        afterFinish: () => {
+          fadeTo(() => practiceDoneMessage(screen8_1));
+        }
       });
     }
 
-    function showMTMainScreen1() {
-      runTaskBlock({
-        taskType: 'MT',
-        isPractice: false,
-        withDigitTask: true,
-        nextScreenBuilder: showFinalScreen
+    function screen8_1(){
+      buildChoiceScreen({
+        showRanking:true,
+        dualTask:true,
+        practice:false,
+        taskName:"MT",
+        totalTrials:20,
+        afterFinish: async () => {
+          await prepareFinalLeaderboard();
+          fadeTo(screen9);
+        }
       });
     }
 
-    function showMTInstructionScreen2() {
-      const screen = createCenteredPanelScreen(`
-        <p>In this experiment you are going to choose between Option A and Option B. The score for this option will be shown below. The percentage indicates the probability that you will receive this score if you select this option.</p>
-        <p>At the same time, numbers 1 through 9 will appear randomly in the center of the screen. When you see the number 3, press the spacebar.</p>
-        <p>Click "Start Practice" to start a few practice trials to get familiar with this!</p>
-        <button class="btn" id="startPracticeBtn">Start Practice</button>
-      `);
-      mountScreen(screen);
-      screen.querySelector('#startPracticeBtn').addEventListener('click', async () => {
-        await fadeOutAndReplace(screen, () => {
-          runTaskBlock({
-            taskType: 'MT',
-            isPractice: true,
-            withDigitTask: true,
-            nextScreenBuilder: showMTMainScreen2
-          });
-        });
+    // MT first flow
+    function screen2_2(){
+      app.innerHTML = `
+        <div class="center-wrap">
+          <div class="card">
+            <div style="font-size:22px;font-weight:700;">
+              In this experiment you are going to choose between Option A and Option B.
+              The score for this option will be shown below. The percentage indicates the probability
+              that you will receive this score if you select this option.
+            </div>
+            <div style="font-size:22px;margin-top:10px;">
+              At the same time, numbers 1 through 9 will appear randomly in the center of the screen.
+              When you see the number 3, press the spacebar.
+            </div>
+            <div style="font-size:22px;margin-top:10px;">
+              Click "Start Practice" to start a few practice trials to get familiar with this!
+            </div>
+            <button class="btn" id="goPractice">Start Practice</button>
+          </div>
+        </div>
+      `;
+      document.getElementById("goPractice").onclick = () => fadeTo(screen3_2);
+    }
+
+    function screen3_2(){
+      buildChoiceScreen({
+        showRanking:false,
+        dualTask:true,
+        practice:true,
+        taskName:"MT",
+        totalTrials:3,
+        afterFinish: () => {
+          fadeTo(() => practiceDoneMessage(screen4_2));
+        }
       });
     }
 
-    function showMTMainScreen2() {
-      runTaskBlock({
-        taskType: 'MT',
-        isPractice: false,
-        withDigitTask: true,
-        nextScreenBuilder: showTransitionToSTScreen2
+    function screen4_2(){
+      buildChoiceScreen({
+        showRanking:true,
+        dualTask:true,
+        practice:false,
+        taskName:"MT",
+        totalTrials:20,
+        afterFinish: () => {
+          fadeTo(screen5_2);
+        }
       });
     }
 
-    function showTransitionToSTScreen2() {
-      const screen = createCenteredPanelScreen(`
-        <p>Congratulations! You’ve completed Part 1. Now you’ll move on to Part 2.</p>
-        <p>Click "Start Practice" to start a few practice trials to get familiar with this!</p>
-        <button class="btn" id="startPracticeBtn">Start Practice</button>
-      `);
-      mountScreen(screen);
-      screen.querySelector('#startPracticeBtn').addEventListener('click', async () => {
-        await fadeOutAndReplace(screen, () => {
-          runTaskBlock({
-            taskType: 'ST',
-            isPractice: true,
-            withDigitTask: false,
-            nextScreenBuilder: showSTMainScreen2
-          });
-        });
+    function screen5_2(){
+      clearDigitTask();
+      app.innerHTML = `
+        <div class="message-only" id="nextMessage">
+          Congratulations! You’ve completed Part 1. Now click anywhere too move on to Part 2.
+        </div>
+      `;
+      document.getElementById("nextMessage").onclick = () => fadeTo(screen6_2);
+    }
+
+    function screen6_2(){
+      app.innerHTML = `
+        <div class="center-wrap">
+          <div class="card">
+            <div style="font-size:22px;font-weight:700;">
+              In this experiment you are going to choose between Option A and Option B.
+              The score for this option is shown below. The percentage indicates the probability
+              that you will receive this score if you select this option.
+            </div>
+            <div style="font-size:22px;margin-top:10px;">
+              Click "Start Practice" to start a few practice trials to get familiar with this!
+            </div>
+            <button class="btn" id="goPractice">Start Practice</button>
+          </div>
+        </div>
+      `;
+      document.getElementById("goPractice").onclick = () => fadeTo(screen7_2);
+    }
+
+    function screen7_2(){
+      buildChoiceScreen({
+        showRanking:false,
+        dualTask:false,
+        practice:true,
+        taskName:"ST",
+        totalTrials:3,
+        afterFinish: () => {
+          fadeTo(() => practiceDoneMessage(screen8_2));
+        }
       });
     }
 
-    function showSTMainScreen2() {
-      runTaskBlock({
-        taskType: 'ST',
-        isPractice: false,
-        withDigitTask: false,
-        nextScreenBuilder: showFinalScreen
+    function screen8_2(){
+      buildChoiceScreen({
+        showRanking:true,
+        dualTask:false,
+        practice:false,
+        taskName:"ST",
+        totalTrials:20,
+        afterFinish: async () => {
+          await prepareFinalLeaderboard();
+          fadeTo(screen9);
+        }
       });
     }
 
-    function startFireworks(canvas) {
-      stopFireworks();
+    function practiceDoneMessage(nextScreenFn){
+      clearDigitTask();
+      app.innerHTML = `
+        <div class="message-only" id="practiceDone">
+          Well done! You've completed the practice section. Now click anywhere to move on to the main section.
+        </div>
+      `;
+      document.getElementById("practiceDone").onclick = () => fadeTo(nextScreenFn);
+    }
 
-      const ctx = canvas.getContext('2d');
-      const dpr = window.devicePixelRatio || 1;
+    async function prepareFinalLeaderboard(){
+      await refreshTop5();
+      try{
+        const data = await apiGetAllTrials();
+        const trials = (data && data.success && Array.isArray(data.data)) ? data.data : [];
 
-      function resize() {
-        canvas.width = Math.floor(canvas.clientWidth * dpr);
-        canvas.height = Math.floor(canvas.clientHeight * dpr);
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        const totals = {};
+        for(const row of trials){
+          const pid = String(row.Participant_ID || "");
+          const tp = Number(row.Total_Points || 0);
+          if(!pid) continue;
+          if(!(pid in totals) || tp > totals[pid]){
+            totals[pid] = tp;
+          }
+        }
+
+        if(state.participantId){
+          totals[state.participantId] = Math.max(Number(totals[state.participantId] || 0), state.totalPoints);
+        }
+
+        state.fullLeaderboard = Object.keys(totals)
+          .map(pid => ({ Participant_ID: pid, Total_Points: totals[pid] }))
+          .sort((a,b) => b.Total_Points - a.Total_Points);
+      }catch(err){
+        console.warn("final leaderboard build failed:", err);
+        state.fullLeaderboard = mergedTop5();
+      }
+    }
+
+    function screen9(){
+      clearDigitTask();
+      app.innerHTML = `
+        <canvas id="fireworks"></canvas>
+        <div class="final-wrap">
+          <div class="final-card">
+            <div class="final-rank" id="finalRank"></div>
+            <div class="final-title">Leaderboard</div>
+            <ul class="leaderboard-list" id="leaderboardList"></ul>
+            <div class="final-note">
+              Congratulations on completing all the sections! Thank you for participating!
+            </div>
+          </div>
+        </div>
+      `;
+
+      const list = document.getElementById("leaderboardList");
+      const rankDiv = document.getElementById("finalRank");
+      const arr = state.fullLeaderboard.length ? state.fullLeaderboard : mergedTop5();
+
+      let myRank = -1;
+      arr.forEach((item, idx) => {
+        if(item.Participant_ID === state.participantId && myRank === -1){
+          myRank = idx + 1;
+        }
+
+        const li = document.createElement("li");
+        li.className = "leaderboard-item";
+        if(idx < 3) li.classList.add("top3");
+        if(item.Participant_ID === state.participantId) li.classList.add("me");
+
+        li.innerHTML = `
+          <span>#${idx + 1} &nbsp; ${safeText(item.Participant_ID)}</span>
+          <span>${item.Total_Points}</span>
+        `;
+        list.appendChild(li);
+      });
+
+      rankDiv.textContent = `Your Rank: #${myRank > 0 ? myRank : "-"}   |   Final Score: ${state.totalPoints}`;
+      startFireworks();
+    }
+
+    /* ---------------------- Fireworks ---------------------- */
+
+    function startFireworks(){
+      const canvas = document.getElementById("fireworks");
+      if(!canvas) return;
+      const ctx = canvas.getContext("2d");
+
+      function resize(){
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
       }
       resize();
+      window.addEventListener("resize", resize);
 
       const particles = [];
 
-      function spawnFirework() {
-        const x = randomInt(80, window.innerWidth - 80);
-        const y = randomInt(60, Math.floor(window.innerHeight * 0.55));
-        const colors = ['#57B9FF', '#FFD700', '#FF0000', '#B3CEE5', '#000000'];
-        const burstCount = randomInt(22, 34);
+      function spawnFirework(){
+        const x = Math.random() * canvas.width;
+        const y = Math.random() * (canvas.height * 0.55) + 40;
+        const colors = ["#ff595e","#ffca3a","#8ac926","#1982c4","#6a4c93","#ff6b6b","#4ecdc4"];
+        const count = 24 + Math.floor(Math.random() * 12);
 
-        for (let i = 0; i < burstCount; i++) {
-          const angle = (Math.PI * 2 * i) / burstCount + Math.random() * 0.25;
-          const speed = Math.random() * 3 + 1.5;
+        for(let i=0;i<count;i++){
+          const angle = Math.random() * Math.PI * 2;
+          const speed = 1 + Math.random() * 4.5;
           particles.push({
             x, y,
             vx: Math.cos(angle) * speed,
             vy: Math.sin(angle) * speed,
-            life: 55 + Math.random() * 28,
-            size: Math.random() * 3 + 1.5,
-            color: colors[randomInt(0, colors.length - 1)]
+            life: 70 + Math.random() * 25,
+            color: colors[Math.floor(Math.random()*colors.length)],
+            size: 2 + Math.random() * 2.8
           });
         }
       }
 
       let lastSpawn = 0;
 
-      function animate(ts) {
-        ctx.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight);
+      function animate(ts){
+        ctx.clearRect(0,0,canvas.width,canvas.height);
 
-        if (!lastSpawn || ts - lastSpawn > 420) {
+        if(ts - lastSpawn > 500){
           spawnFirework();
           lastSpawn = ts;
         }
 
-        for (let i = particles.length - 1; i >= 0; i--) {
+        for(let i = particles.length - 1; i >= 0; i--){
           const p = particles[i];
           p.x += p.vx;
           p.y += p.vy;
-          p.vy += 0.03;
+          p.vy += 0.025;
           p.life -= 1;
 
-          ctx.globalAlpha = Math.max(p.life / 80, 0);
-          ctx.beginPath();
+          ctx.globalAlpha = Math.max(p.life / 100, 0);
           ctx.fillStyle = p.color;
+          ctx.beginPath();
           ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
           ctx.fill();
 
-          if (p.life <= 0) particles.splice(i, 1);
+          if(p.life <= 0){
+            particles.splice(i,1);
+          }
         }
 
         ctx.globalAlpha = 1;
-        state.fireworksAnimFrame = requestAnimationFrame(animate);
+        requestAnimationFrame(animate);
       }
 
-      state.fireworksAnimFrame = requestAnimationFrame(animate);
-      window.addEventListener('resize', resize);
+      requestAnimationFrame(animate);
     }
 
-    function stopFireworks() {
-      if (state.fireworksAnimFrame) {
-        cancelAnimationFrame(state.fireworksAnimFrame);
-        state.fireworksAnimFrame = null;
-      }
-    }
+    /* ---------------------- Start ---------------------- */
 
-    function findRank(leaderboard, participantId) {
-      const idx = leaderboard.findIndex(x => String(x.Participant_ID) === String(participantId));
-      return idx >= 0 ? idx + 1 : null;
-    }
-
-    async function showFinalScreen() {
-      clearApp();
-
-      const screen = createScreen();
-      screen.innerHTML = `
-        <canvas id="fireworksCanvas"></canvas>
-        <div class="final-wrap">
-          <div class="final-panel">
-            <div class="final-header">
-              <h2>Your final result</h2>
-              <p>Loading final ranking...</p>
-            </div>
-
-            <div class="leaderboard-title">Leaderboard</div>
-            <div class="leaderboard-list" id="leaderboardList"></div>
-
-            <div class="final-thanks">
-              Congratulations on completing all the sections! Thank you for participating!
-            </div>
-          </div>
-        </div>
-      `;
-      mountScreen(screen);
-
-      startFireworks(screen.querySelector('#fireworksCanvas'));
-
-      const header = screen.querySelector('.final-header');
-      const list = screen.querySelector('#leaderboardList');
-
-      try {
-        await sleep(600);
-        const allRows = await rebuildLeaderboardFromRawData();
-        const rank = findRank(allRows, state.assignedParticipantId);
-
-        header.innerHTML = `
-          <h2>Your final result</h2>
-          <p>Final Rank: ${rank || 'N/A'} &nbsp;&nbsp;|&nbsp;&nbsp; Final Total Score: ${state.currentTotalPoints}</p>
-        `;
-
-        list.innerHTML = '';
-
-        allRows.forEach((item, idx) => {
-          const row = document.createElement('div');
-          const isTop3 = idx < 3;
-          const isCurrent = String(item.Participant_ID) === String(state.assignedParticipantId);
-
-          row.className = 'leaderboard-item'
-            + (isTop3 ? ' top3' : '')
-            + (isCurrent ? ' current-user' : '');
-
-          row.innerHTML = `
-            <div class="leaderboard-rank">${idx + 1}</div>
-            <div class="leaderboard-id">${escapeHtml(item.Participant_ID)}</div>
-            <div class="leaderboard-points">${Number(item.Total_Points) || 0}</div>
-          `;
-          list.appendChild(row);
-        });
-      } catch (err) {
-        header.innerHTML = `
-          <h2>Your final result</h2>
-          <p>Final Total Score: ${state.currentTotalPoints}</p>
-        `;
-        list.innerHTML = `<div class="error-text">Could not load final leaderboard: ${escapeHtml(err.message)}</div>`;
-      }
-    }
-
-    showWelcomeScreen();
+    screen1();
   </script>
 </body>
 </html>
