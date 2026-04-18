@@ -21,22 +21,18 @@
       margin:0;
       width:100%;
       height:100%;
-      background:var(--white);
-      color:var(--black);
+      background:#fff;
+      color:#000;
       font-family:Arial, Helvetica, sans-serif;
       overflow:hidden;
-    }
-
-    body{
-      position:relative;
     }
 
     #app{
       width:100vw;
       height:100vh;
       position:relative;
-      background:var(--white);
       overflow:hidden;
+      background:#fff;
     }
 
     .screen{
@@ -45,20 +41,14 @@
       display:flex;
       align-items:center;
       justify-content:center;
-      background:var(--white);
+      background:#fff;
       opacity:0;
       animation:screenFadeIn 520ms ease forwards;
     }
 
     @keyframes screenFadeIn{
-      from{
-        opacity:0;
-        transform:translateY(10px);
-      }
-      to{
-        opacity:1;
-        transform:translateY(0);
-      }
+      from{ opacity:0; transform:translateY(10px); }
+      to{ opacity:1; transform:translateY(0); }
     }
 
     .panel{
@@ -73,9 +63,7 @@
       font-size:20px;
     }
 
-    .panel.small{
-      max-width:620px;
-    }
+    .panel.small{ max-width:620px; }
 
     .panel p{
       margin:0 0 16px 0;
@@ -92,7 +80,7 @@
 
     input[type="text"]{
       width:min(360px, 75vw);
-      border:2px solid var(--black);
+      border:2px solid #000;
       border-radius:14px;
       padding:14px 16px;
       font-size:18px;
@@ -153,7 +141,6 @@
     .task-title{
       font-size:18px;
       font-weight:700;
-      letter-spacing:0.2px;
       margin-top:4px;
       text-align:center;
     }
@@ -181,9 +168,7 @@
       transition:opacity 220ms ease;
     }
 
-    .choice-board.fade{
-      opacity:0;
-    }
+    .choice-board.fade{ opacity:0; }
 
     .choice-half{
       position:relative;
@@ -191,7 +176,7 @@
       align-items:center;
       justify-content:center;
       cursor:pointer;
-      transition:background-color 150ms ease, opacity 150ms ease, transform 150ms ease;
+      transition:background-color 150ms ease, opacity 150ms ease;
       user-select:none;
       overflow:hidden;
     }
@@ -251,7 +236,6 @@
       opacity:0;
       transition:opacity 120ms ease, transform 120ms ease;
       pointer-events:none;
-      will-change:transform, opacity;
     }
 
     .outcome-text.show{
@@ -477,16 +461,8 @@
       line-height:1.45;
     }
 
-    .loading-text{
-      text-align:center;
-      font-size:22px;
-      padding:20px;
-    }
-
     @media (max-width: 900px){
-      .choice-board{
-        height:min(430px, 48vh);
-      }
+      .choice-board{ height:min(430px, 48vh); }
       .choice-label{font-size:46px;}
       .choice-line{font-size:24px;}
       .digit-circle{
@@ -501,9 +477,7 @@
         padding:26px 20px;
         font-size:18px;
       }
-      .choice-board{
-        height:min(360px, 42vh);
-      }
+      .choice-board{ height:min(360px, 42vh); }
       .choice-label{font-size:40px;}
       .choice-line{font-size:22px;}
       .leaderboard-row{
@@ -524,8 +498,9 @@
   <div id="error-banner"></div>
 
   <script>
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxmtXGHtkUcpvlDgLlmaUjpGHGhrSjBFqJ8uTdn5F-lXjZuT9prqo6pWxAp-mCfayQ5Rw/exec";
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwHT4xwIa6C-LxzeDGTLJ-A-J2ZsAQ0CVQMABNSbcrq-j--LJT1D0tmFtOWToIY6ZcOow/exec";
     const X_VALUES = [10, 20, 30, 40, 50, 60];
+    const DIGIT_INTERVAL_MS = 2000;
 
     const state = {
       participantId: null,
@@ -537,7 +512,6 @@
       currentXValue: null,
       totalPoints: 0,
       leaderboardData: [],
-      summaryData: [],
       currentDigit: null,
       digitIntervalId: null,
       targetWasPending: false,
@@ -554,6 +528,8 @@
 
     let leaderboardPollTimer = null;
     let currentCleanup = null;
+    let fireworksAnimationId = null;
+    let fireworksData = null;
 
     function showError(message) {
       errorBanner.textContent = message;
@@ -570,10 +546,6 @@
         currentCleanup = null;
       }
       app.innerHTML = "";
-    }
-
-    function sleep(ms) {
-      return new Promise(resolve => setTimeout(resolve, ms));
     }
 
     function randomChoice(arr) {
@@ -617,9 +589,7 @@
       overlay.style.transition = "opacity 420ms ease";
       document.body.appendChild(overlay);
 
-      requestAnimationFrame(() => {
-        overlay.style.opacity = "1";
-      });
+      requestAnimationFrame(() => overlay.style.opacity = "1");
 
       setTimeout(() => {
         overlay.remove();
@@ -627,18 +597,19 @@
       }, delay + 200);
     }
 
-    function setLeaderboardPolling(active) {
-      clearInterval(leaderboardPollTimer);
-      leaderboardPollTimer = null;
-      if (active) {
-        fetchCompletedLeaderboard();
-        leaderboardPollTimer = setInterval(fetchCompletedLeaderboard, 3000);
+    async function initParticipant() {
+      const response = await fetch(`${WEB_APP_URL}?mode=init_participant`);
+      if (!response.ok) throw new Error("Failed to initialize participant.");
+      const data = await response.json();
+      if (!data.success || !data.participant_id) {
+        throw new Error(data.error || "Failed to get participant ID.");
       }
+      state.participantId = data.participant_id;
     }
 
     async function uploadMainTrial(payload) {
       const body = {
-        participant_id: state.participantId || "",
+        participant_id: state.participantId,
         anon_input_id: state.anonInputId || "",
         task: payload.task,
         trial_index: payload.trialIndex,
@@ -654,59 +625,39 @@
         body: JSON.stringify(body)
       });
 
-      if (!response.ok) {
-        throw new Error("Network error while uploading trial.");
-      }
-
+      if (!response.ok) throw new Error("Network error while uploading trial.");
       const data = await response.json();
-
-      if (!data.success) {
-        throw new Error(data.error || "Server rejected trial upload.");
-      }
-
-      if (data.participant_id && !state.participantId) {
-        state.participantId = data.participant_id;
-      }
-
+      if (!data.success) throw new Error(data.error || "Server rejected trial upload.");
       return data;
     }
 
-    async function fetchCompletedLeaderboard() {
+    async function fetchLeaderboard() {
       try {
-        const [rankingResp, summaryResp] = await Promise.all([
-          fetch(`${WEB_APP_URL}?mode=ranking`),
-          fetch(`${WEB_APP_URL}?mode=summary`)
-        ]);
-
-        if (!rankingResp.ok || !summaryResp.ok) {
-          throw new Error("Failed to retrieve leaderboard data.");
+        const response = await fetch(`${WEB_APP_URL}?mode=ranking`);
+        if (!response.ok) throw new Error("Failed to retrieve leaderboard.");
+        const data = await response.json();
+        if (!data.success || !Array.isArray(data.data)) {
+          throw new Error(data.error || "Invalid leaderboard response.");
         }
 
-        const rankingData = await rankingResp.json();
-        const summaryData = await summaryResp.json();
-
-        if (!rankingData.success || !summaryData.success) {
-          throw new Error("Invalid leaderboard response.");
-        }
-
-        const completedIds = new Set(
-          (summaryData.data || [])
-            .filter(row => row.Completed === true || row.Completed === "TRUE" || row.Completed === "true")
-            .map(row => String(row.Participant_ID))
-        );
-
-        state.summaryData = summaryData.data || [];
-        state.leaderboardData = (rankingData.data || [])
-          .filter(row => completedIds.has(String(row.Participant_ID)))
-          .map(row => ({
-            Participant_ID: String(row.Participant_ID),
-            Total_Points: Number(row.Total_Points) || 0
-          }))
-          .sort((a, b) => (b.Total_Points - a.Total_Points) || String(a.Participant_ID).localeCompare(String(b.Participant_ID)));
+        state.leaderboardData = data.data.map(row => ({
+          rank: row.rank,
+          Participant_ID: String(row.Participant_ID),
+          Total_Points: Number(row.Total_Points) || 0
+        }));
 
         refreshDynamicLeaderboardUI();
       } catch (err) {
         console.error(err);
+      }
+    }
+
+    function setLeaderboardPolling(active) {
+      clearInterval(leaderboardPollTimer);
+      leaderboardPollTimer = null;
+      if (active) {
+        fetchLeaderboard();
+        leaderboardPollTimer = setInterval(fetchLeaderboard, 3000);
       }
     }
 
@@ -853,17 +804,23 @@ Please enter your Participant ID below
       button.className = "primary-btn";
       button.textContent = "Start";
 
-      button.addEventListener("click", () => {
-        state.anonInputId = input.value.trim();
-        state.taskOrder = Math.random() < 0.5 ? "ST_first" : "MT_first";
+      button.addEventListener("click", async () => {
+        try {
+          state.anonInputId = input.value.trim();
+          state.taskOrder = Math.random() < 0.5 ? "ST_first" : "MT_first";
+          await initParticipant();
 
-        animateButtonTransition(button, () => {
-          if (state.taskOrder === "ST_first") {
-            renderInstructionsScreen("ST");
-          } else {
-            renderInstructionsScreen("MT");
-          }
-        });
+          animateButtonTransition(button, () => {
+            if (state.taskOrder === "ST_first") {
+              renderInstructionsScreen("ST");
+            } else {
+              renderInstructionsScreen("MT");
+            }
+          });
+        } catch (err) {
+          console.error(err);
+          showError("Failed to start experiment.\nPlease try again.");
+        }
       });
 
       wrap.appendChild(input);
@@ -902,7 +859,6 @@ Click "Start Practice" to start a few practice trials to get familiar with this!
       const button = document.createElement("button");
       button.className = "primary-btn";
       button.textContent = "Start Practice";
-
       button.addEventListener("click", () => {
         animateButtonTransition(button, () => startBlock(task, true));
       });
@@ -985,7 +941,7 @@ Click "Start Practice" to start a few practice trials to get familiar with this!
 
       const rankingContainer = document.createElement("div");
       rankingContainer.setAttribute("data-final-ranking", "true");
-      rankingContainer.innerHTML = `<div class="loading-text">Loading ranking...</div>`;
+      rankingContainer.innerHTML = `<div style="text-align:center;padding:20px;">Loading ranking...</div>`;
 
       panel.appendChild(rankingContainer);
       layout.appendChild(canvas);
@@ -1028,6 +984,7 @@ Click "Start Practice" to start a few practice trials to get familiar with this!
       const bothDone = state.finishedMainTasks.ST && state.finishedMainTasks.MT;
 
       if (bothDone) {
+        setTimeout(() => fetchLeaderboard(), 400);
         fadeToWhiteThen(() => renderFinalScreen(), 350);
       } else {
         const nextTask = getSecondTask();
@@ -1059,7 +1016,6 @@ Click "Start Practice" to start a few practice trials to get familiar with this!
 
       const left = document.createElement("div");
       left.className = "choice-half";
-      left.dataset.choice = "A";
       left.innerHTML = `
         <div class="choice-content">
           <div class="choice-label">A</div>
@@ -1071,7 +1027,6 @@ Click "Start Practice" to start a few practice trials to get familiar with this!
 
       const right = document.createElement("div");
       right.className = "choice-half";
-      right.dataset.choice = "B";
       right.innerHTML = `
         <div class="choice-content">
           <div class="choice-label">B</div>
@@ -1146,14 +1101,13 @@ Click "Start Practice" to start a few practice trials to get familiar with this!
             xValue: state.currentXValue,
             pointsAwarded
           }).then(() => {
-            fetchCompletedLeaderboard();
+            fetchLeaderboard();
           }).catch(err => {
             console.error(err);
             showError("A server error occurred while uploading the trial.\nThis trial may not have been saved.");
           });
         }
 
-        // UI immediately continues without waiting for network
         setTimeout(() => {
           board.classList.add("fade");
         }, 180);
@@ -1221,7 +1175,7 @@ Click "Start Practice" to start a few practice trials to get familiar with this!
       };
 
       updateDigit();
-      state.digitIntervalId = setInterval(updateDigit, 500);
+      state.digitIntervalId = setInterval(updateDigit, DIGIT_INTERVAL_MS);
       startDigitTask._keyHandler = keyHandler;
     }
 
@@ -1247,9 +1201,6 @@ Click "Start Practice" to start a few practice trials to get familiar with this!
       void circleEl.offsetWidth;
       circleEl.classList.add("shake");
     }
-
-    let fireworksAnimationId = null;
-    let fireworksData = null;
 
     function startFireworks(canvas) {
       const ctx = canvas.getContext("2d");
