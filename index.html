@@ -1,0 +1,1342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Behavioral Experiment</title>
+  <style>
+    :root{
+      --light-blue:#B3CEE5;
+      --dark-blue:#57B9FF;
+      --black:#000000;
+      --white:#FFFFFF;
+      --yellow:#FFD700;
+      --red:#FF0000;
+      --panel-radius:24px;
+      --shadow:0 10px 30px rgba(0,0,0,0.08);
+    }
+
+    *{box-sizing:border-box;}
+    html,body{
+      margin:0;
+      width:100%;
+      height:100%;
+      background:var(--white);
+      color:var(--black);
+      font-family:Arial, Helvetica, sans-serif;
+      overflow:hidden;
+    }
+
+    body{
+      position:relative;
+    }
+
+    #app{
+      width:100vw;
+      height:100vh;
+      position:relative;
+      background:var(--white);
+      overflow:hidden;
+    }
+
+    .screen{
+      position:absolute;
+      inset:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:var(--white);
+      opacity:0;
+      animation:screenFadeIn 520ms ease forwards;
+    }
+
+    @keyframes screenFadeIn{
+      from{
+        opacity:0;
+        transform:translateY(10px);
+      }
+      to{
+        opacity:1;
+        transform:translateY(0);
+      }
+    }
+
+    .panel{
+      background:var(--light-blue);
+      border-radius:var(--panel-radius);
+      padding:34px 36px;
+      max-width:780px;
+      width:min(88vw, 780px);
+      text-align:center;
+      box-shadow:var(--shadow);
+      line-height:1.65;
+      font-size:20px;
+    }
+
+    .panel.small{
+      max-width:620px;
+    }
+
+    .panel p{
+      margin:0 0 16px 0;
+      white-space:pre-line;
+    }
+
+    .input-wrap{
+      margin-top:18px;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:16px;
+    }
+
+    input[type="text"]{
+      width:min(360px, 75vw);
+      border:2px solid var(--black);
+      border-radius:14px;
+      padding:14px 16px;
+      font-size:18px;
+      outline:none;
+      background:#fff;
+    }
+
+    .primary-btn{
+      background:var(--dark-blue);
+      color:#fff;
+      border:none;
+      border-radius:18px;
+      padding:15px 28px;
+      font-size:20px;
+      cursor:pointer;
+      transition:transform 180ms ease, opacity 180ms ease, box-shadow 180ms ease;
+      box-shadow:0 10px 24px rgba(87,185,255,0.28);
+      position:relative;
+      z-index:2;
+    }
+
+    .primary-btn:hover{
+      transform:scale(1.05);
+    }
+
+    .expand-transition{
+      position:fixed;
+      border-radius:999px;
+      background:var(--dark-blue);
+      transform:translate(-50%, -50%) scale(1);
+      pointer-events:none;
+      z-index:9999;
+      opacity:1;
+      transition:
+        transform 650ms cubic-bezier(.2,.8,.2,1),
+        opacity 650ms ease,
+        background-color 650ms ease;
+    }
+
+    .expand-transition.expand{
+      transform:translate(-50%, -50%) scale(40);
+      opacity:0;
+      background:#fff;
+    }
+
+    .task-screen{
+      width:100%;
+      height:100%;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:flex-start;
+      background:#fff;
+      padding:18px 20px 16px;
+      gap:18px;
+    }
+
+    .task-title{
+      font-size:18px;
+      font-weight:700;
+      letter-spacing:0.2px;
+      margin-top:4px;
+      text-align:center;
+    }
+
+    .task-main-area{
+      flex:1;
+      width:100%;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      gap:20px;
+      min-height:0;
+    }
+
+    .choice-board{
+      position:relative;
+      width:min(1120px, 96vw);
+      height:min(470px, 54vh);
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      background:#fff;
+      flex-shrink:0;
+      opacity:1;
+      transition:opacity 220ms ease;
+    }
+
+    .choice-board.fade{
+      opacity:0;
+    }
+
+    .choice-half{
+      position:relative;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      cursor:pointer;
+      transition:background-color 150ms ease, opacity 150ms ease, transform 150ms ease;
+      user-select:none;
+      overflow:hidden;
+    }
+
+    .choice-half.disabled{
+      pointer-events:none;
+      cursor:default;
+    }
+
+    .choice-half:hover{
+      background:rgba(179,206,229,0.75);
+    }
+
+    .choice-half.selected{
+      background:rgba(179,206,229,0.95);
+    }
+
+    .choice-half.dimmed{
+      opacity:0.45;
+    }
+
+    .choice-content{
+      text-align:center;
+      z-index:1;
+    }
+
+    .choice-label{
+      font-size:56px;
+      font-weight:700;
+      margin-bottom:16px;
+    }
+
+    .choice-line{
+      font-size:30px;
+      margin:10px 0;
+    }
+
+    .vertical-divider{
+      position:absolute;
+      top:0;
+      bottom:0;
+      left:50%;
+      width:2px;
+      background:#000;
+      transform:translateX(-50%);
+      z-index:3;
+      pointer-events:none;
+    }
+
+    .outcome-text{
+      position:absolute;
+      left:50%;
+      top:73%;
+      transform:translate(-50%,-50%);
+      font-size:42px;
+      font-weight:700;
+      opacity:0;
+      transition:opacity 120ms ease, transform 120ms ease;
+      pointer-events:none;
+      will-change:transform, opacity;
+    }
+
+    .outcome-text.show{
+      opacity:1;
+      transform:translate(-50%,-58%);
+    }
+
+    .digit-circle{
+      position:absolute;
+      left:50%;
+      top:50%;
+      width:130px;
+      height:130px;
+      transform:translate(-50%, -50%);
+      border:3px solid #000;
+      border-radius:50%;
+      background:#fff;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:54px;
+      font-weight:700;
+      z-index:5;
+      pointer-events:none;
+    }
+
+    .digit-circle.shake{
+      animation:shake 260ms ease;
+    }
+
+    @keyframes shake{
+      0%{transform:translate(-50%,-50%) translateX(0);}
+      15%{transform:translate(-50%,-50%) translateX(-8px);}
+      30%{transform:translate(-50%,-50%) translateX(8px);}
+      45%{transform:translate(-50%,-50%) translateX(-6px);}
+      60%{transform:translate(-50%,-50%) translateX(6px);}
+      75%{transform:translate(-50%,-50%) translateX(-3px);}
+      100%{transform:translate(-50%,-50%) translateX(0);}
+    }
+
+    .leaderboard-box{
+      width:min(700px, 92vw);
+      background:#fff;
+      border:2px solid #000;
+      border-radius:16px;
+      padding:14px 18px 16px 18px;
+      box-shadow:0 8px 20px rgba(0,0,0,0.06);
+      flex-shrink:0;
+    }
+
+    .leaderboard-title{
+      text-align:center;
+      font-size:22px;
+      font-weight:700;
+      text-transform:lowercase;
+      margin-bottom:10px;
+    }
+
+    .leaderboard-list{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      font-size:18px;
+      min-height:120px;
+    }
+
+    .leaderboard-row{
+      display:grid;
+      grid-template-columns:60px 1fr 130px;
+      align-items:center;
+      gap:8px;
+      padding:4px 6px;
+      border-radius:8px;
+    }
+
+    .leaderboard-row.current{
+      color:var(--red);
+      font-weight:700;
+    }
+
+    .leaderboard-empty{
+      text-align:center;
+      padding:20px 6px;
+      font-size:17px;
+      color:#444;
+    }
+
+    .total-points{
+      margin-top:12px;
+      text-align:center;
+      font-size:28px;
+      font-weight:700;
+      line-height:1.25;
+    }
+
+    .message-screen{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      gap:24px;
+      text-align:center;
+      padding:28px;
+      width:100%;
+      height:100%;
+      background:#fff;
+      font-size:26px;
+      line-height:1.5;
+    }
+
+    .message-text{
+      max-width:900px;
+      white-space:pre-line;
+    }
+
+    #error-banner{
+      position:fixed;
+      top:16px;
+      right:16px;
+      max-width:min(420px, 88vw);
+      background:#fff0f0;
+      border:2px solid #cc0000;
+      color:#900;
+      padding:14px 16px;
+      border-radius:14px;
+      box-shadow:0 10px 24px rgba(0,0,0,0.12);
+      font-size:15px;
+      line-height:1.4;
+      z-index:10000;
+      display:none;
+      white-space:pre-line;
+    }
+
+    .final-layout{
+      position:relative;
+      width:100%;
+      height:100%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:#fff;
+      overflow:hidden;
+      padding:24px;
+    }
+
+    #fireworks{
+      position:absolute;
+      inset:0;
+      width:100%;
+      height:100%;
+      z-index:1;
+      pointer-events:none;
+    }
+
+    .final-panel{
+      position:relative;
+      z-index:2;
+      background:#fff;
+      border:2px solid #000;
+      border-radius:20px;
+      width:min(820px, 92vw);
+      max-height:min(84vh, 900px);
+      padding:22px 24px;
+      overflow:auto;
+      box-shadow:var(--shadow);
+    }
+
+    .final-rank-summary{
+      text-align:center;
+      font-size:24px;
+      font-weight:700;
+      line-height:1.4;
+      margin-bottom:14px;
+    }
+
+    .final-title{
+      text-align:center;
+      font-size:26px;
+      font-weight:700;
+      text-transform:lowercase;
+      margin-bottom:12px;
+    }
+
+    .final-list{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+    }
+
+    .final-row{
+      display:grid;
+      grid-template-columns:70px 1fr 130px;
+      align-items:center;
+      gap:10px;
+      border-radius:10px;
+      padding:8px 10px;
+      font-size:20px;
+    }
+
+    .final-row.top3{
+      background:rgba(255,215,0,0.48);
+      font-weight:700;
+    }
+
+    .final-row.current{
+      color:var(--red);
+      font-weight:700;
+      border:1px solid rgba(255,0,0,0.25);
+      background:rgba(255,0,0,0.05);
+    }
+
+    .final-empty{
+      text-align:center;
+      padding:24px 10px;
+      font-size:18px;
+      color:#444;
+    }
+
+    .final-footer{
+      margin-top:18px;
+      text-align:center;
+      font-size:22px;
+      line-height:1.45;
+    }
+
+    .loading-text{
+      text-align:center;
+      font-size:22px;
+      padding:20px;
+    }
+
+    @media (max-width: 900px){
+      .choice-board{
+        height:min(430px, 48vh);
+      }
+      .choice-label{font-size:46px;}
+      .choice-line{font-size:24px;}
+      .digit-circle{
+        width:110px;
+        height:110px;
+        font-size:48px;
+      }
+    }
+
+    @media (max-width: 640px){
+      .panel{
+        padding:26px 20px;
+        font-size:18px;
+      }
+      .choice-board{
+        height:min(360px, 42vh);
+      }
+      .choice-label{font-size:40px;}
+      .choice-line{font-size:22px;}
+      .leaderboard-row{
+        grid-template-columns:48px 1fr 95px;
+        font-size:16px;
+      }
+      .total-points{font-size:24px;}
+      .message-screen{font-size:22px;}
+      .final-row{
+        grid-template-columns:54px 1fr 100px;
+        font-size:17px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <div id="error-banner"></div>
+
+  <script>
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxmtXGHtkUcpvlDgLlmaUjpGHGhrSjBFqJ8uTdn5F-lXjZuT9prqo6pWxAp-mCfayQ5Rw/exec";
+    const X_VALUES = [10, 20, 30, 40, 50, 60];
+
+    const state = {
+      participantId: null,
+      anonInputId: "",
+      taskOrder: null,
+      currentTask: null,
+      isPractice: false,
+      trialIndex: 0,
+      currentXValue: null,
+      totalPoints: 0,
+      leaderboardData: [],
+      summaryData: [],
+      currentDigit: null,
+      digitIntervalId: null,
+      targetWasPending: false,
+      blockSize: 0,
+      keyboardActive: false,
+      finishedMainTasks: {
+        ST: false,
+        MT: false
+      }
+    };
+
+    const app = document.getElementById("app");
+    const errorBanner = document.getElementById("error-banner");
+
+    let leaderboardPollTimer = null;
+    let currentCleanup = null;
+
+    function showError(message) {
+      errorBanner.textContent = message;
+      errorBanner.style.display = "block";
+      clearTimeout(showError._timer);
+      showError._timer = setTimeout(() => {
+        errorBanner.style.display = "none";
+      }, 5500);
+    }
+
+    function clearApp() {
+      if (typeof currentCleanup === "function") {
+        currentCleanup();
+        currentCleanup = null;
+      }
+      app.innerHTML = "";
+    }
+
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    function randomChoice(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    function weightedOutcome(choseA, xValue) {
+      if (choseA === 1) {
+        return Math.random() < 0.8 ? 10 : 0;
+      } else {
+        return Math.random() < 0.2 ? xValue : 0;
+      }
+    }
+
+    function animateButtonTransition(buttonEl, callback) {
+      const rect = buttonEl.getBoundingClientRect();
+      const circle = document.createElement("div");
+      circle.className = "expand-transition";
+      circle.style.width = rect.width + "px";
+      circle.style.height = rect.height + "px";
+      circle.style.left = (rect.left + rect.width / 2) + "px";
+      circle.style.top = (rect.top + rect.height / 2) + "px";
+      document.body.appendChild(circle);
+
+      requestAnimationFrame(() => circle.classList.add("expand"));
+
+      setTimeout(() => {
+        circle.remove();
+        callback();
+      }, 700);
+    }
+
+    function fadeToWhiteThen(callback, delay = 350) {
+      const overlay = document.createElement("div");
+      overlay.style.position = "fixed";
+      overlay.style.inset = "0";
+      overlay.style.background = "#fff";
+      overlay.style.opacity = "0";
+      overlay.style.zIndex = "9998";
+      overlay.style.pointerEvents = "none";
+      overlay.style.transition = "opacity 420ms ease";
+      document.body.appendChild(overlay);
+
+      requestAnimationFrame(() => {
+        overlay.style.opacity = "1";
+      });
+
+      setTimeout(() => {
+        overlay.remove();
+        callback();
+      }, delay + 200);
+    }
+
+    function setLeaderboardPolling(active) {
+      clearInterval(leaderboardPollTimer);
+      leaderboardPollTimer = null;
+      if (active) {
+        fetchCompletedLeaderboard();
+        leaderboardPollTimer = setInterval(fetchCompletedLeaderboard, 3000);
+      }
+    }
+
+    async function uploadMainTrial(payload) {
+      const body = {
+        participant_id: state.participantId || "",
+        anon_input_id: state.anonInputId || "",
+        task: payload.task,
+        trial_index: payload.trialIndex,
+        chose_a: payload.choseA,
+        x_value: payload.xValue,
+        points_awarded: payload.pointsAwarded,
+        task_order: state.taskOrder
+      };
+
+      const response = await fetch(WEB_APP_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(body)
+      });
+
+      if (!response.ok) {
+        throw new Error("Network error while uploading trial.");
+      }
+
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new Error(data.error || "Server rejected trial upload.");
+      }
+
+      if (data.participant_id && !state.participantId) {
+        state.participantId = data.participant_id;
+      }
+
+      return data;
+    }
+
+    async function fetchCompletedLeaderboard() {
+      try {
+        const [rankingResp, summaryResp] = await Promise.all([
+          fetch(`${WEB_APP_URL}?mode=ranking`),
+          fetch(`${WEB_APP_URL}?mode=summary`)
+        ]);
+
+        if (!rankingResp.ok || !summaryResp.ok) {
+          throw new Error("Failed to retrieve leaderboard data.");
+        }
+
+        const rankingData = await rankingResp.json();
+        const summaryData = await summaryResp.json();
+
+        if (!rankingData.success || !summaryData.success) {
+          throw new Error("Invalid leaderboard response.");
+        }
+
+        const completedIds = new Set(
+          (summaryData.data || [])
+            .filter(row => row.Completed === true || row.Completed === "TRUE" || row.Completed === "true")
+            .map(row => String(row.Participant_ID))
+        );
+
+        state.summaryData = summaryData.data || [];
+        state.leaderboardData = (rankingData.data || [])
+          .filter(row => completedIds.has(String(row.Participant_ID)))
+          .map(row => ({
+            Participant_ID: String(row.Participant_ID),
+            Total_Points: Number(row.Total_Points) || 0
+          }))
+          .sort((a, b) => (b.Total_Points - a.Total_Points) || String(a.Participant_ID).localeCompare(String(b.Participant_ID)));
+
+        refreshDynamicLeaderboardUI();
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    function computeCurrentRank() {
+      const idx = state.leaderboardData.findIndex(
+        row => String(row.Participant_ID) === String(state.participantId)
+      );
+      return idx >= 0 ? idx + 1 : null;
+    }
+
+    function getParticipantEntry() {
+      return state.leaderboardData.find(
+        row => String(row.Participant_ID) === String(state.participantId)
+      ) || null;
+    }
+
+    function refreshDynamicLeaderboardUI() {
+      document.querySelectorAll("[data-live-leaderboard='main']").forEach(box => {
+        renderMainLeaderboardInto(box);
+      });
+
+      const finalContainer = document.querySelector("[data-final-ranking='true']");
+      if (finalContainer) {
+        renderFinalRankingInto(finalContainer);
+      }
+    }
+
+    function renderMainLeaderboardInto(container) {
+      container.innerHTML = "";
+
+      const title = document.createElement("div");
+      title.className = "leaderboard-title";
+      title.textContent = "leaderboard";
+      container.appendChild(title);
+
+      const list = document.createElement("div");
+      list.className = "leaderboard-list";
+
+      const top5 = state.leaderboardData.slice(0, 5);
+
+      if (top5.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "leaderboard-empty";
+        empty.textContent = "No completed participants yet";
+        list.appendChild(empty);
+      } else {
+        top5.forEach((row, i) => {
+          const line = document.createElement("div");
+          line.className = "leaderboard-row";
+          if (String(row.Participant_ID) === String(state.participantId)) {
+            line.classList.add("current");
+          }
+          line.innerHTML = `
+            <div>${i + 1}.</div>
+            <div>${row.Participant_ID}</div>
+            <div>${row.Total_Points}</div>
+          `;
+          list.appendChild(line);
+        });
+      }
+
+      container.appendChild(list);
+
+      const total = document.createElement("div");
+      total.className = "total-points";
+      total.innerHTML = `Total Points:<br>${state.totalPoints}`;
+      container.appendChild(total);
+    }
+
+    function renderFinalRankingInto(container) {
+      container.innerHTML = "";
+
+      const participantRow = getParticipantEntry();
+      const currentRank = computeCurrentRank();
+
+      const header = document.createElement("div");
+      header.className = "final-rank-summary";
+      header.innerHTML = `
+        Your Final Rank: ${currentRank ?? "-"}<br>
+        Your Total Score: ${participantRow ? participantRow.Total_Points : state.totalPoints}
+      `;
+      container.appendChild(header);
+
+      const title = document.createElement("div");
+      title.className = "final-title";
+      title.textContent = "leaderboard";
+      container.appendChild(title);
+
+      if (state.leaderboardData.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "final-empty";
+        empty.textContent = "No completed participants yet";
+        container.appendChild(empty);
+      } else {
+        const list = document.createElement("div");
+        list.className = "final-list";
+
+        state.leaderboardData.forEach((row, index) => {
+          const div = document.createElement("div");
+          div.className = "final-row";
+          if (index < 3) div.classList.add("top3");
+          if (String(row.Participant_ID) === String(state.participantId)) div.classList.add("current");
+
+          div.innerHTML = `
+            <div>${index + 1}</div>
+            <div>${row.Participant_ID}</div>
+            <div>${row.Total_Points}</div>
+          `;
+          list.appendChild(div);
+        });
+
+        container.appendChild(list);
+      }
+
+      const footer = document.createElement("div");
+      footer.className = "final-footer";
+      footer.textContent = "Congratulations on completing all the sections! Thank you for participating!";
+      container.appendChild(footer);
+    }
+
+    function renderWelcomeScreen() {
+      clearApp();
+      setLeaderboardPolling(false);
+
+      const screen = document.createElement("div");
+      screen.className = "screen";
+
+      const panel = document.createElement("div");
+      panel.className = "panel small";
+      panel.innerHTML = `
+        <p>Welcome to the experiment
+Please enter your Participant ID below
+(we won't be able to see your ID, it's going to be completely anonymous)</p>
+      `;
+
+      const wrap = document.createElement("div");
+      wrap.className = "input-wrap";
+
+      const input = document.createElement("input");
+      input.type = "text";
+      input.placeholder = "Anonymous ID";
+
+      const button = document.createElement("button");
+      button.className = "primary-btn";
+      button.textContent = "Start";
+
+      button.addEventListener("click", () => {
+        state.anonInputId = input.value.trim();
+        state.taskOrder = Math.random() < 0.5 ? "ST_first" : "MT_first";
+
+        animateButtonTransition(button, () => {
+          if (state.taskOrder === "ST_first") {
+            renderInstructionsScreen("ST");
+          } else {
+            renderInstructionsScreen("MT");
+          }
+        });
+      });
+
+      wrap.appendChild(input);
+      wrap.appendChild(button);
+      panel.appendChild(wrap);
+      screen.appendChild(panel);
+      app.appendChild(screen);
+    }
+
+    function renderInstructionsScreen(task) {
+      clearApp();
+      setLeaderboardPolling(false);
+
+      const screen = document.createElement("div");
+      screen.className = "screen";
+
+      const panel = document.createElement("div");
+      panel.className = "panel";
+
+      const text = task === "ST"
+        ? `In this experiment you are going to choose between Option A and Option B.
+The score for this option is shown below.
+The percentage indicates the probability that you will receive this score if you select this option.
+
+Click "Start Practice" to start a few practice trials to get familiar with this!`
+        : `In this experiment you are going to choose between Option A and Option B.
+The score for this option will be shown below.
+The percentage indicates the probability that you will receive this score if you select this option.
+At the same time, numbers 1 through 9 will appear randomly in the center of the screen.
+When you see the number 3, press the spacebar.
+
+Click "Start Practice" to start a few practice trials to get familiar with this!`;
+
+      panel.innerHTML = `<p>${text}</p>`;
+
+      const button = document.createElement("button");
+      button.className = "primary-btn";
+      button.textContent = "Start Practice";
+
+      button.addEventListener("click", () => {
+        animateButtonTransition(button, () => startBlock(task, true));
+      });
+
+      const wrap = document.createElement("div");
+      wrap.className = "input-wrap";
+      wrap.appendChild(button);
+      panel.appendChild(wrap);
+
+      screen.appendChild(panel);
+      app.appendChild(screen);
+    }
+
+    function renderPartTransitionScreen(nextTask) {
+      clearApp();
+      setLeaderboardPolling(false);
+
+      const screen = document.createElement("div");
+      screen.className = "screen";
+
+      const wrap = document.createElement("div");
+      wrap.className = "message-screen";
+
+      const text = document.createElement("div");
+      text.className = "message-text";
+      text.textContent = `Congratulations! You’ve completed Part 1. Now you’ll move on to Part 2.
+Click "Start Practice" to start a few practice trials to get familiar with this!`;
+
+      const button = document.createElement("button");
+      button.className = "primary-btn";
+      button.textContent = "Start Practice";
+      button.addEventListener("click", () => {
+        animateButtonTransition(button, () => startBlock(nextTask, true));
+      });
+
+      wrap.appendChild(text);
+      wrap.appendChild(button);
+      screen.appendChild(wrap);
+      app.appendChild(screen);
+    }
+
+    function renderPracticeDoneScreen(nextTask) {
+      clearApp();
+      setLeaderboardPolling(false);
+
+      const screen = document.createElement("div");
+      screen.className = "screen";
+
+      const wrap = document.createElement("div");
+      wrap.className = "message-screen";
+
+      const text = document.createElement("div");
+      text.className = "message-text";
+      text.textContent = "Well done! You've completed the practice section. Now let's move on to the main section.";
+
+      wrap.appendChild(text);
+      screen.appendChild(wrap);
+      app.appendChild(screen);
+
+      setTimeout(() => {
+        fadeToWhiteThen(() => startBlock(nextTask, false), 420);
+      }, 950);
+    }
+
+    function renderFinalScreen() {
+      clearApp();
+      setLeaderboardPolling(true);
+
+      const screen = document.createElement("div");
+      screen.className = "screen";
+
+      const layout = document.createElement("div");
+      layout.className = "final-layout";
+
+      const canvas = document.createElement("canvas");
+      canvas.id = "fireworks";
+
+      const panel = document.createElement("div");
+      panel.className = "final-panel";
+
+      const rankingContainer = document.createElement("div");
+      rankingContainer.setAttribute("data-final-ranking", "true");
+      rankingContainer.innerHTML = `<div class="loading-text">Loading ranking...</div>`;
+
+      panel.appendChild(rankingContainer);
+      layout.appendChild(canvas);
+      layout.appendChild(panel);
+      screen.appendChild(layout);
+      app.appendChild(screen);
+
+      refreshDynamicLeaderboardUI();
+      startFireworks(canvas);
+
+      currentCleanup = () => {
+        stopFireworks();
+      };
+    }
+
+    function getSecondTask() {
+      return state.taskOrder === "ST_first" ? "MT" : "ST";
+    }
+
+    function startBlock(task, isPractice) {
+      clearApp();
+
+      state.currentTask = task;
+      state.isPractice = isPractice;
+      state.trialIndex = 1;
+      state.blockSize = isPractice ? 3 : 20;
+
+      renderTrialScreen(task, isPractice);
+      if (!isPractice) setLeaderboardPolling(true);
+      else setLeaderboardPolling(false);
+    }
+
+    function proceedAfterBlock(task, isPractice) {
+      if (isPractice) {
+        renderPracticeDoneScreen(task);
+        return;
+      }
+
+      state.finishedMainTasks[task] = true;
+      const bothDone = state.finishedMainTasks.ST && state.finishedMainTasks.MT;
+
+      if (bothDone) {
+        fadeToWhiteThen(() => renderFinalScreen(), 350);
+      } else {
+        const nextTask = getSecondTask();
+        fadeToWhiteThen(() => renderPartTransitionScreen(nextTask), 350);
+      }
+    }
+
+    function renderTrialScreen(task, isPractice) {
+      clearApp();
+
+      const screen = document.createElement("div");
+      screen.className = "screen";
+
+      const wrap = document.createElement("div");
+      wrap.className = "task-screen";
+
+      const title = document.createElement("div");
+      title.className = "task-title";
+      title.textContent = `${task} ${isPractice ? "Practice" : "Main"} — Trial ${state.trialIndex} / ${state.blockSize}`;
+      wrap.appendChild(title);
+
+      const mainArea = document.createElement("div");
+      mainArea.className = "task-main-area";
+
+      const board = document.createElement("div");
+      board.className = "choice-board";
+
+      state.currentXValue = randomChoice(X_VALUES);
+
+      const left = document.createElement("div");
+      left.className = "choice-half";
+      left.dataset.choice = "A";
+      left.innerHTML = `
+        <div class="choice-content">
+          <div class="choice-label">A</div>
+          <div class="choice-line">10 Points</div>
+          <div class="choice-line">80%</div>
+          <div class="outcome-text" data-outcome="A"></div>
+        </div>
+      `;
+
+      const right = document.createElement("div");
+      right.className = "choice-half";
+      right.dataset.choice = "B";
+      right.innerHTML = `
+        <div class="choice-content">
+          <div class="choice-label">B</div>
+          <div class="choice-line">${state.currentXValue} Points</div>
+          <div class="choice-line">20%</div>
+          <div class="outcome-text" data-outcome="B"></div>
+        </div>
+      `;
+
+      const divider = document.createElement("div");
+      divider.className = "vertical-divider";
+
+      board.appendChild(left);
+      board.appendChild(right);
+      board.appendChild(divider);
+
+      let digitCircle = null;
+      if (task === "MT") {
+        digitCircle = document.createElement("div");
+        digitCircle.className = "digit-circle";
+        digitCircle.textContent = "0";
+        board.appendChild(digitCircle);
+      }
+
+      mainArea.appendChild(board);
+
+      if (!isPractice) {
+        const leaderboardBox = document.createElement("div");
+        leaderboardBox.className = "leaderboard-box";
+        leaderboardBox.setAttribute("data-live-leaderboard", "main");
+        mainArea.appendChild(leaderboardBox);
+      }
+
+      wrap.appendChild(mainArea);
+      screen.appendChild(wrap);
+      app.appendChild(screen);
+
+      if (!isPractice) refreshDynamicLeaderboardUI();
+
+      let choiceLocked = false;
+
+      const handleChoice = (choice) => {
+        if (choiceLocked) return;
+        choiceLocked = true;
+
+        left.classList.add("disabled");
+        right.classList.add("disabled");
+        left.removeEventListener("click", leftListener);
+        right.removeEventListener("click", rightListener);
+
+        const choseA = choice === "A" ? 1 : 0;
+        const chosenHalf = choseA ? left : right;
+        const otherHalf = choseA ? right : left;
+
+        chosenHalf.classList.add("selected");
+        otherHalf.classList.add("dimmed");
+
+        const pointsAwarded = weightedOutcome(choseA, state.currentXValue);
+        state.totalPoints += pointsAwarded;
+
+        const outcomeEl = chosenHalf.querySelector(`[data-outcome="${choice}"]`);
+        outcomeEl.textContent = `+${pointsAwarded}`;
+        outcomeEl.classList.add("show");
+
+        if (!isPractice) {
+          refreshDynamicLeaderboardUI();
+
+          uploadMainTrial({
+            task,
+            trialIndex: state.trialIndex,
+            choseA,
+            xValue: state.currentXValue,
+            pointsAwarded
+          }).then(() => {
+            fetchCompletedLeaderboard();
+          }).catch(err => {
+            console.error(err);
+            showError("A server error occurred while uploading the trial.\nThis trial may not have been saved.");
+          });
+        }
+
+        // UI immediately continues without waiting for network
+        setTimeout(() => {
+          board.classList.add("fade");
+        }, 180);
+
+        setTimeout(() => {
+          stopDigitTask();
+
+          if (state.trialIndex < state.blockSize) {
+            state.trialIndex += 1;
+            renderTrialScreen(task, isPractice);
+          } else {
+            proceedAfterBlock(task, isPractice);
+          }
+        }, 420);
+      };
+
+      const leftListener = () => handleChoice("A");
+      const rightListener = () => handleChoice("B");
+
+      left.addEventListener("click", leftListener, { passive: true });
+      right.addEventListener("click", rightListener, { passive: true });
+
+      if (task === "MT" && digitCircle) {
+        startDigitTask(digitCircle);
+      }
+
+      currentCleanup = () => {
+        stopDigitTask();
+        left.removeEventListener("click", leftListener);
+        right.removeEventListener("click", rightListener);
+      };
+    }
+
+    function startDigitTask(circleEl) {
+      stopDigitTask();
+
+      state.keyboardActive = true;
+      state.currentDigit = null;
+      state.targetWasPending = false;
+
+      const keyHandler = (e) => {
+        if (!state.keyboardActive) return;
+        if (e.code !== "Space") return;
+        e.preventDefault();
+
+        if (state.currentDigit === 3 && state.targetWasPending) {
+          state.targetWasPending = false;
+        } else {
+          triggerCircleShake(circleEl);
+        }
+      };
+
+      window.addEventListener("keydown", keyHandler);
+
+      const updateDigit = () => {
+        if (state.currentDigit === 3 && state.targetWasPending) {
+          triggerCircleShake(circleEl);
+          state.targetWasPending = false;
+        }
+
+        const digit = Math.floor(Math.random() * 10);
+        state.currentDigit = digit;
+        circleEl.textContent = digit;
+        state.targetWasPending = digit === 3;
+      };
+
+      updateDigit();
+      state.digitIntervalId = setInterval(updateDigit, 500);
+      startDigitTask._keyHandler = keyHandler;
+    }
+
+    function stopDigitTask() {
+      if (state.digitIntervalId) {
+        clearInterval(state.digitIntervalId);
+        state.digitIntervalId = null;
+      }
+
+      if (state.keyboardActive && startDigitTask._keyHandler) {
+        window.removeEventListener("keydown", startDigitTask._keyHandler);
+      }
+
+      state.keyboardActive = false;
+      state.currentDigit = null;
+      state.targetWasPending = false;
+      startDigitTask._keyHandler = null;
+    }
+
+    function triggerCircleShake(circleEl) {
+      if (!circleEl) return;
+      circleEl.classList.remove("shake");
+      void circleEl.offsetWidth;
+      circleEl.classList.add("shake");
+    }
+
+    let fireworksAnimationId = null;
+    let fireworksData = null;
+
+    function startFireworks(canvas) {
+      const ctx = canvas.getContext("2d");
+      const dpr = window.devicePixelRatio || 1;
+
+      const resize = () => {
+        canvas.width = Math.floor(window.innerWidth * dpr);
+        canvas.height = Math.floor(window.innerHeight * dpr);
+        canvas.style.width = window.innerWidth + "px";
+        canvas.style.height = window.innerHeight + "px";
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      };
+
+      resize();
+      window.addEventListener("resize", resize);
+
+      fireworksData = { ctx, resize, particles: [] };
+
+      function spawnFirework() {
+        const cx = Math.random() * window.innerWidth;
+        const cy = 80 + Math.random() * (window.innerHeight * 0.55);
+        const count = 28 + Math.floor(Math.random() * 28);
+
+        for (let i = 0; i < count; i++) {
+          const angle = (Math.PI * 2 * i) / count;
+          const speed = 1.5 + Math.random() * 4.2;
+          fireworksData.particles.push({
+            x: cx,
+            y: cy,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            life: 60 + Math.random() * 28,
+            age: 0,
+            size: 2 + Math.random() * 2.5,
+            color: `hsl(${Math.random() * 360}, 100%, 55%)`
+          });
+        }
+      }
+
+      function animate() {
+        ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+
+        if (Math.random() < 0.08) {
+          spawnFirework();
+        }
+
+        fireworksData.particles.forEach(p => {
+          p.age += 1;
+          p.x += p.vx;
+          p.y += p.vy;
+          p.vy += 0.02;
+        });
+
+        fireworksData.particles = fireworksData.particles.filter(p => p.age < p.life);
+
+        fireworksData.particles.forEach(p => {
+          const alpha = 1 - p.age / p.life;
+          ctx.globalAlpha = alpha;
+          ctx.beginPath();
+          ctx.fillStyle = p.color;
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fill();
+        });
+
+        ctx.globalAlpha = 1;
+        fireworksAnimationId = requestAnimationFrame(animate);
+      }
+
+      animate();
+    }
+
+    function stopFireworks() {
+      if (fireworksAnimationId) {
+        cancelAnimationFrame(fireworksAnimationId);
+        fireworksAnimationId = null;
+      }
+      if (fireworksData && fireworksData.resize) {
+        window.removeEventListener("resize", fireworksData.resize);
+      }
+      fireworksData = null;
+    }
+
+    function init() {
+      renderWelcomeScreen();
+    }
+
+    init();
+  </script>
+</body>
+</html>
