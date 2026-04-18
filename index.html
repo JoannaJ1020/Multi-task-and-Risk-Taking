@@ -43,7 +43,7 @@
       justify-content:center;
       background:#fff;
       opacity:0;
-      animation:screenFadeIn 520ms ease forwards;
+      animation:screenFadeIn 420ms ease forwards;
     }
 
     @keyframes screenFadeIn{
@@ -96,34 +96,12 @@
       padding:15px 28px;
       font-size:20px;
       cursor:pointer;
-      transition:transform 180ms ease, opacity 180ms ease, box-shadow 180ms ease;
+      transition:transform 180ms ease, box-shadow 180ms ease;
       box-shadow:0 10px 24px rgba(87,185,255,0.28);
-      position:relative;
-      z-index:2;
     }
 
     .primary-btn:hover{
       transform:scale(1.05);
-    }
-
-    .expand-transition{
-      position:fixed;
-      border-radius:999px;
-      background:var(--dark-blue);
-      transform:translate(-50%, -50%) scale(1);
-      pointer-events:none;
-      z-index:9999;
-      opacity:1;
-      transition:
-        transform 650ms cubic-bezier(.2,.8,.2,1),
-        opacity 650ms ease,
-        background-color 650ms ease;
-    }
-
-    .expand-transition.expand{
-      transform:translate(-50%, -50%) scale(40);
-      opacity:0;
-      background:#fff;
     }
 
     .task-screen{
@@ -165,7 +143,7 @@
       background:#fff;
       flex-shrink:0;
       opacity:1;
-      transition:opacity 220ms ease;
+      transition:opacity 180ms ease;
     }
 
     .choice-board.fade{ opacity:0; }
@@ -355,7 +333,7 @@
       position:fixed;
       top:16px;
       right:16px;
-      max-width:min(420px, 88vw);
+      max-width:min(460px, 88vw);
       background:#fff0f0;
       border:2px solid #cc0000;
       color:#900;
@@ -498,9 +476,10 @@
   <div id="error-banner"></div>
 
   <script>
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwHT4xwIa6C-LxzeDGTLJ-A-J2ZsAQ0CVQMABNSbcrq-j--LJT1D0tmFtOWToIY6ZcOow/exec";
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxtElvNWY229MI9BQV-hNgQhWKy2HRjGtdhIz1z_Fq5xJnw58lQUf8PG4p4WRIaRIMZig/exec";
     const X_VALUES = [10, 20, 30, 40, 50, 60];
-    const DIGIT_INTERVAL_MS = 2000;
+    const DIGIT_INTERVAL_MS = 3000;
+    const STORAGE_KEY = "behavior_experiment_official_participant_id";
 
     const state = {
       participantId: null,
@@ -520,7 +499,8 @@
       finishedMainTasks: {
         ST: false,
         MT: false
-      }
+      },
+      finalized: false
     };
 
     const app = document.getElementById("app");
@@ -537,7 +517,7 @@
       clearTimeout(showError._timer);
       showError._timer = setTimeout(() => {
         errorBanner.style.display = "none";
-      }, 5500);
+      }, 6000);
     }
 
     function clearApp() {
@@ -555,30 +535,11 @@
     function weightedOutcome(choseA, xValue) {
       if (choseA === 1) {
         return Math.random() < 0.8 ? 10 : 0;
-      } else {
-        return Math.random() < 0.2 ? xValue : 0;
       }
+      return Math.random() < 0.2 ? xValue : 0;
     }
 
-    function animateButtonTransition(buttonEl, callback) {
-      const rect = buttonEl.getBoundingClientRect();
-      const circle = document.createElement("div");
-      circle.className = "expand-transition";
-      circle.style.width = rect.width + "px";
-      circle.style.height = rect.height + "px";
-      circle.style.left = (rect.left + rect.width / 2) + "px";
-      circle.style.top = (rect.top + rect.height / 2) + "px";
-      document.body.appendChild(circle);
-
-      requestAnimationFrame(() => circle.classList.add("expand"));
-
-      setTimeout(() => {
-        circle.remove();
-        callback();
-      }, 700);
-    }
-
-    function fadeToWhiteThen(callback, delay = 350) {
+    function fadeToWhiteThen(callback, delay = 300) {
       const overlay = document.createElement("div");
       overlay.style.position = "fixed";
       overlay.style.inset = "0";
@@ -586,7 +547,7 @@
       overlay.style.opacity = "0";
       overlay.style.zIndex = "9998";
       overlay.style.pointerEvents = "none";
-      overlay.style.transition = "opacity 420ms ease";
+      overlay.style.transition = "opacity 360ms ease";
       document.body.appendChild(overlay);
 
       requestAnimationFrame(() => overlay.style.opacity = "1");
@@ -594,22 +555,34 @@
       setTimeout(() => {
         overlay.remove();
         callback();
-      }, delay + 200);
+      }, delay + 180);
     }
 
     async function initParticipant() {
+      const savedId = localStorage.getItem(STORAGE_KEY);
+      if (savedId) {
+        state.participantId = savedId;
+        return;
+      }
+
       const response = await fetch(`${WEB_APP_URL}?mode=init_participant`);
       if (!response.ok) throw new Error("Failed to initialize participant.");
+
       const data = await response.json();
       if (!data.success || !data.participant_id) {
         throw new Error(data.error || "Failed to get participant ID.");
       }
+
       state.participantId = data.participant_id;
+      localStorage.setItem(STORAGE_KEY, state.participantId);
     }
 
     async function uploadMainTrial(payload) {
+      const fixedParticipantId = state.participantId || localStorage.getItem(STORAGE_KEY);
+
       const body = {
-        participant_id: state.participantId,
+        action: "save_trial",
+        participant_id: fixedParticipantId,
         anon_input_id: state.anonInputId || "",
         task: payload.task,
         trial_index: payload.trialIndex,
@@ -629,6 +602,27 @@
       const data = await response.json();
       if (!data.success) throw new Error(data.error || "Server rejected trial upload.");
       return data;
+    }
+
+    async function finalizeParticipant() {
+      if (state.finalized) return;
+      state.finalized = true;
+
+      const fixedParticipantId = state.participantId || localStorage.getItem(STORAGE_KEY);
+
+      const response = await fetch(WEB_APP_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({
+          action: "finalize_participant",
+          participant_id: fixedParticipantId,
+          total_points: state.totalPoints
+        })
+      });
+
+      if (!response.ok) throw new Error("Failed to finalize participant.");
+      const data = await response.json();
+      if (!data.success) throw new Error(data.error || "Finalize failed.");
     }
 
     async function fetchLeaderboard() {
@@ -810,13 +804,11 @@ Please enter your Participant ID below
           state.taskOrder = Math.random() < 0.5 ? "ST_first" : "MT_first";
           await initParticipant();
 
-          animateButtonTransition(button, () => {
-            if (state.taskOrder === "ST_first") {
-              renderInstructionsScreen("ST");
-            } else {
-              renderInstructionsScreen("MT");
-            }
-          });
+          if (state.taskOrder === "ST_first") {
+            renderInstructionsScreen("ST");
+          } else {
+            renderInstructionsScreen("MT");
+          }
         } catch (err) {
           console.error(err);
           showError("Failed to start experiment.\nPlease try again.");
@@ -860,7 +852,7 @@ Click "Start Practice" to start a few practice trials to get familiar with this!
       button.className = "primary-btn";
       button.textContent = "Start Practice";
       button.addEventListener("click", () => {
-        animateButtonTransition(button, () => startBlock(task, true));
+        startBlock(task, true);
       });
 
       const wrap = document.createElement("div");
@@ -891,7 +883,7 @@ Click "Start Practice" to start a few practice trials to get familiar with this!
       button.className = "primary-btn";
       button.textContent = "Start Practice";
       button.addEventListener("click", () => {
-        animateButtonTransition(button, () => startBlock(nextTask, true));
+        startBlock(nextTask, true);
       });
 
       wrap.appendChild(text);
@@ -919,7 +911,7 @@ Click "Start Practice" to start a few practice trials to get familiar with this!
       app.appendChild(screen);
 
       setTimeout(() => {
-        fadeToWhiteThen(() => startBlock(nextTask, false), 420);
+        fadeToWhiteThen(() => startBlock(nextTask, false), 360);
       }, 950);
     }
 
@@ -974,7 +966,7 @@ Click "Start Practice" to start a few practice trials to get familiar with this!
       else setLeaderboardPolling(false);
     }
 
-    function proceedAfterBlock(task, isPractice) {
+    async function proceedAfterBlock(task, isPractice) {
       if (isPractice) {
         renderPracticeDoneScreen(task);
         return;
@@ -984,11 +976,18 @@ Click "Start Practice" to start a few practice trials to get familiar with this!
       const bothDone = state.finishedMainTasks.ST && state.finishedMainTasks.MT;
 
       if (bothDone) {
-        setTimeout(() => fetchLeaderboard(), 400);
-        fadeToWhiteThen(() => renderFinalScreen(), 350);
+        try {
+          await finalizeParticipant();
+          await fetchLeaderboard();
+        } catch (err) {
+          console.error(err);
+          showError("Final score upload failed.\nPlease do not close the page and try again.");
+        }
+
+        fadeToWhiteThen(() => renderFinalScreen(), 300);
       } else {
         const nextTask = getSecondTask();
-        fadeToWhiteThen(() => renderPartTransitionScreen(nextTask), 350);
+        fadeToWhiteThen(() => renderPartTransitionScreen(nextTask), 300);
       }
     }
 
@@ -1243,9 +1242,7 @@ Click "Start Practice" to start a few practice trials to get familiar with this!
       function animate() {
         ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
 
-        if (Math.random() < 0.08) {
-          spawnFirework();
-        }
+        if (Math.random() < 0.08) spawnFirework();
 
         fireworksData.particles.forEach(p => {
           p.age += 1;
@@ -1284,6 +1281,7 @@ Click "Start Practice" to start a few practice trials to get familiar with this!
     }
 
     function init() {
+      localStorage.removeItem(STORAGE_KEY);
       renderWelcomeScreen();
     }
 
