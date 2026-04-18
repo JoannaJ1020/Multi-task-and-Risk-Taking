@@ -5,1287 +5,1525 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Behavioral Experiment</title>
   <style>
-    :root{
-      --light-blue:#B3CEE5;
-      --dark-blue:#57B9FF;
-      --black:#000000;
-      --white:#FFFFFF;
-      --yellow:#FFD700;
-      --red:#FF0000;
-      --panel-radius:24px;
-      --shadow:0 10px 30px rgba(0,0,0,0.08);
+    :root {
+      --light-blue: #B3CEE5;
+      --dark-blue: #57B9FF;
+      --black: #000000;
+      --white: #FFFFFF;
+      --red: #FF0000;
+      --yellow: #FFD700;
+      --panel-shadow: 0 12px 35px rgba(0, 0, 0, 0.08);
+      --soft-border: 2px solid #000000;
+      --radius-lg: 24px;
+      --radius-md: 16px;
+      --radius-sm: 12px;
+      --transition-fast: 180ms ease;
+      --transition-med: 350ms ease;
+      --transition-slow: 550ms ease;
     }
 
-    *{box-sizing:border-box;}
-    html,body{
-      margin:0;
-      width:100%;
-      height:100%;
-      background:#fff;
-      color:#000;
-      font-family:Arial, Helvetica, sans-serif;
-      overflow:hidden;
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
     }
 
-    #app{
-      width:100vw;
-      height:100vh;
-      position:relative;
-      overflow:hidden;
-      background:#fff;
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background: var(--white);
+      color: var(--black);
+      font-family: Arial, Helvetica, sans-serif;
+      overflow: hidden;
     }
 
-    .screen{
-      position:absolute;
-      inset:0;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      background:#fff;
-      opacity:0;
-      animation:screenFadeIn 420ms ease forwards;
+    body {
+      display: flex;
+      align-items: stretch;
+      justify-content: stretch;
     }
 
-    @keyframes screenFadeIn{
-      from{ opacity:0; transform:translateY(10px); }
-      to{ opacity:1; transform:translateY(0); }
+    #app {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      background: var(--white);
+      overflow: hidden;
     }
 
-    .panel{
-      background:var(--light-blue);
-      border-radius:var(--panel-radius);
-      padding:34px 36px;
-      max-width:780px;
-      width:min(88vw, 780px);
-      text-align:center;
-      box-shadow:var(--shadow);
-      line-height:1.65;
-      font-size:20px;
+    .screen {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity var(--transition-slow);
+      background: var(--white);
     }
 
-    .panel.small{ max-width:620px; }
-
-    .panel p{
-      margin:0 0 16px 0;
-      white-space:pre-line;
+    .screen.active {
+      opacity: 1;
+      pointer-events: auto;
     }
 
-    .input-wrap{
-      margin-top:18px;
-      display:flex;
-      flex-direction:column;
-      align-items:center;
-      gap:16px;
+    .center-wrap {
+      width: min(92vw, 900px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 24px;
     }
 
-    input[type="text"]{
-      width:min(360px, 75vw);
-      border:2px solid #000;
-      border-radius:14px;
-      padding:14px 16px;
-      font-size:18px;
-      outline:none;
-      background:#fff;
+    .panel {
+      background: var(--light-blue);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--panel-shadow);
+      padding: 34px 34px 30px;
+      text-align: center;
+      max-width: 760px;
+      width: 100%;
+      line-height: 1.65;
     }
 
-    .primary-btn{
-      background:var(--dark-blue);
-      color:#fff;
-      border:none;
-      border-radius:18px;
-      padding:15px 28px;
-      font-size:20px;
-      cursor:pointer;
-      transition:transform 180ms ease, box-shadow 180ms ease;
-      box-shadow:0 10px 24px rgba(87,185,255,0.28);
+    .panel h1, .panel h2, .panel p {
+      margin: 0 0 16px 0;
     }
 
-    .primary-btn:hover{
-      transform:scale(1.05);
+    .panel h1 {
+      font-size: clamp(28px, 4vw, 40px);
+      font-weight: 700;
     }
 
-    .task-screen{
-      width:100%;
-      height:100%;
-      display:flex;
-      flex-direction:column;
-      align-items:center;
-      justify-content:flex-start;
-      background:#fff;
-      padding:18px 20px 16px;
-      gap:18px;
+    .panel p {
+      font-size: clamp(18px, 2.2vw, 22px);
     }
 
-    .task-title{
-      font-size:18px;
-      font-weight:700;
-      margin-top:4px;
-      text-align:center;
+    .small-note {
+      font-size: clamp(15px, 1.8vw, 18px);
     }
 
-    .task-main-area{
-      flex:1;
-      width:100%;
-      display:flex;
-      flex-direction:column;
-      align-items:center;
-      justify-content:center;
-      gap:20px;
-      min-height:0;
+    .text-input {
+      width: min(420px, 80%);
+      padding: 14px 16px;
+      font-size: 18px;
+      border: 2px solid #000;
+      border-radius: 14px;
+      outline: none;
+      margin: 10px auto 20px;
+      display: block;
+      background: #fff;
     }
 
-    .choice-board{
-      position:relative;
-      width:min(1120px, 96vw);
-      height:min(470px, 54vh);
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      background:#fff;
-      flex-shrink:0;
-      opacity:1;
-      transition:opacity 180ms ease;
+    .btn {
+      appearance: none;
+      border: none;
+      background: var(--dark-blue);
+      color: var(--white);
+      border-radius: var(--radius-md);
+      padding: 14px 28px;
+      font-size: 20px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform var(--transition-fast), filter var(--transition-fast), opacity var(--transition-fast);
+      box-shadow: 0 8px 18px rgba(0,0,0,0.12);
+      min-width: 170px;
     }
 
-    .choice-board.fade{ opacity:0; }
-
-    .choice-half{
-      position:relative;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      cursor:pointer;
-      transition:background-color 150ms ease, opacity 150ms ease;
-      user-select:none;
-      overflow:hidden;
+    .btn:hover:not(:disabled),
+    .btn:focus-visible:not(:disabled) {
+      transform: scale(1.05);
+      filter: brightness(1.02);
     }
 
-    .choice-half.disabled{
-      pointer-events:none;
-      cursor:default;
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
     }
 
-    .choice-half:hover{
-      background:rgba(179,206,229,0.75);
+    .status-text {
+      margin-top: 12px;
+      min-height: 24px;
+      font-size: 16px;
+      color: #333;
     }
 
-    .choice-half.selected{
-      background:rgba(179,206,229,0.95);
+    /* Task layout */
+    .task-screen-inner {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      justify-content: stretch;
+      background: var(--white);
     }
 
-    .choice-half.dimmed{
-      opacity:0.45;
+    .task-main-region {
+      position: relative;
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      align-items: stretch;
+      justify-content: stretch;
+      overflow: hidden;
     }
 
-    .choice-content{
-      text-align:center;
-      z-index:1;
+    .choice-stage {
+      position: absolute;
+      inset: 0;
+      opacity: 1;
+      transition: opacity 300ms ease;
     }
 
-    .choice-label{
-      font-size:56px;
-      font-weight:700;
-      margin-bottom:16px;
+    .choice-stage.hidden {
+      opacity: 0;
+      pointer-events: none;
     }
 
-    .choice-line{
-      font-size:30px;
-      margin:10px 0;
+    .choice-wrapper {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: stretch;
+      justify-content: stretch;
     }
 
-    .vertical-divider{
-      position:absolute;
-      top:0;
-      bottom:0;
-      left:50%;
-      width:2px;
-      background:#000;
-      transform:translateX(-50%);
-      z-index:3;
-      pointer-events:none;
+    .choice-half {
+      position: relative;
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      user-select: none;
+      transition: background-color 220ms ease;
+      overflow: hidden;
     }
 
-    .outcome-text{
-      position:absolute;
-      left:50%;
-      top:73%;
-      transform:translate(-50%,-50%);
-      font-size:42px;
-      font-weight:700;
-      opacity:0;
-      transition:opacity 120ms ease, transform 120ms ease;
-      pointer-events:none;
+    .choice-half:hover {
+      background: rgba(179, 206, 229, 0.75);
     }
 
-    .outcome-text.show{
-      opacity:1;
-      transform:translate(-50%,-58%);
+    .choice-half.disabled {
+      cursor: default;
+      pointer-events: none;
     }
 
-    .digit-circle{
-      position:absolute;
-      left:50%;
-      top:50%;
-      width:130px;
-      height:130px;
-      transform:translate(-50%, -50%);
-      border:3px solid #000;
-      border-radius:50%;
-      background:#fff;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      font-size:54px;
-      font-weight:700;
-      z-index:5;
-      pointer-events:none;
+    .divider {
+      position: absolute;
+      top: 12%;
+      bottom: 12%;
+      left: 50%;
+      width: 2px;
+      background: #000;
+      transform: translateX(-50%);
+      z-index: 5;
     }
 
-    .digit-circle.shake{
-      animation:shake 260ms ease;
+    .choice-content {
+      text-align: center;
+      z-index: 2;
+      padding: 24px;
     }
 
-    @keyframes shake{
-      0%{transform:translate(-50%,-50%) translateX(0);}
-      15%{transform:translate(-50%,-50%) translateX(-8px);}
-      30%{transform:translate(-50%,-50%) translateX(8px);}
-      45%{transform:translate(-50%,-50%) translateX(-6px);}
-      60%{transform:translate(-50%,-50%) translateX(6px);}
-      75%{transform:translate(-50%,-50%) translateX(-3px);}
-      100%{transform:translate(-50%,-50%) translateX(0);}
+    .option-label {
+      font-size: clamp(56px, 8vw, 92px);
+      font-weight: 800;
+      margin-bottom: 16px;
     }
 
-    .leaderboard-box{
-      width:min(700px, 92vw);
-      background:#fff;
-      border:2px solid #000;
-      border-radius:16px;
-      padding:14px 18px 16px 18px;
-      box-shadow:0 8px 20px rgba(0,0,0,0.06);
-      flex-shrink:0;
+    .option-points {
+      font-size: clamp(26px, 4vw, 40px);
+      font-weight: 700;
+      margin-bottom: 10px;
     }
 
-    .leaderboard-title{
-      text-align:center;
-      font-size:22px;
-      font-weight:700;
-      text-transform:lowercase;
-      margin-bottom:10px;
+    .option-prob {
+      font-size: clamp(24px, 3vw, 34px);
+      font-weight: 600;
     }
 
-    .leaderboard-list{
-      display:flex;
-      flex-direction:column;
-      gap:6px;
-      font-size:18px;
-      min-height:120px;
+    .feedback {
+      position: absolute;
+      left: 50%;
+      top: 68%;
+      transform: translate(-50%, -50%);
+      font-size: clamp(34px, 4vw, 52px);
+      font-weight: 800;
+      opacity: 0;
+      transition: opacity 250ms ease, transform 250ms ease;
+      pointer-events: none;
+      z-index: 6;
+      white-space: nowrap;
     }
 
-    .leaderboard-row{
-      display:grid;
-      grid-template-columns:60px 1fr 130px;
-      align-items:center;
-      gap:8px;
-      padding:4px 6px;
-      border-radius:8px;
+    .feedback.visible {
+      opacity: 1;
+      transform: translate(-50%, -56%);
     }
 
-    .leaderboard-row.current{
-      color:var(--red);
-      font-weight:700;
+    .feedback.left {
+      left: 25%;
     }
 
-    .leaderboard-empty{
-      text-align:center;
-      padding:20px 6px;
-      font-size:17px;
-      color:#444;
+    .feedback.right {
+      left: 75%;
     }
 
-    .total-points{
-      margin-top:12px;
-      text-align:center;
-      font-size:28px;
-      font-weight:700;
-      line-height:1.25;
+    /* Center digit circle */
+    .digit-circle {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: min(15vw, 130px);
+      height: min(15vw, 130px);
+      min-width: 90px;
+      min-height: 90px;
+      max-width: 130px;
+      max-height: 130px;
+      transform: translate(-50%, -50%);
+      border: 2px solid #000;
+      border-radius: 50%;
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: clamp(34px, 4.3vw, 52px);
+      font-weight: 800;
+      z-index: 7;
+      user-select: none;
     }
 
-    .message-screen{
-      display:flex;
-      flex-direction:column;
-      align-items:center;
-      justify-content:center;
-      gap:24px;
-      text-align:center;
-      padding:28px;
-      width:100%;
-      height:100%;
-      background:#fff;
-      font-size:26px;
-      line-height:1.5;
+    .shake {
+      animation: shake 360ms ease;
     }
 
-    .message-text{
-      max-width:900px;
-      white-space:pre-line;
+    @keyframes shake {
+      0% { transform: translate(-50%, -50%) translateX(0); }
+      20% { transform: translate(-50%, -50%) translateX(-8px); }
+      40% { transform: translate(-50%, -50%) translateX(8px); }
+      60% { transform: translate(-50%, -50%) translateX(-6px); }
+      80% { transform: translate(-50%, -50%) translateX(6px); }
+      100% { transform: translate(-50%, -50%) translateX(0); }
     }
 
-    #error-banner{
-      position:fixed;
-      top:16px;
-      right:16px;
-      max-width:min(460px, 88vw);
-      background:#fff0f0;
-      border:2px solid #cc0000;
-      color:#900;
-      padding:14px 16px;
-      border-radius:14px;
-      box-shadow:0 10px 24px rgba(0,0,0,0.12);
-      font-size:15px;
-      line-height:1.4;
-      z-index:10000;
-      display:none;
-      white-space:pre-line;
+    /* Ranking panel */
+    .ranking-wrap {
+      height: 175px;
+      background: transparent;
+      padding: 0 20px 20px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      flex-shrink: 0;
+      z-index: 8;
     }
 
-    .final-layout{
-      position:relative;
-      width:100%;
-      height:100%;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      background:#fff;
-      overflow:hidden;
-      padding:24px;
+    .ranking-panel {
+      width: min(1000px, 95vw);
+      background: #fff;
+      border: 2px solid #000;
+      border-radius: 18px;
+      padding: 14px 18px 16px;
+      box-shadow: 0 8px 22px rgba(0,0,0,0.06);
     }
 
-    #fireworks{
-      position:absolute;
-      inset:0;
-      width:100%;
-      height:100%;
-      z-index:1;
-      pointer-events:none;
+    .ranking-title {
+      text-align: center;
+      font-weight: 800;
+      font-size: 22px;
+      margin-bottom: 10px;
     }
 
-    .final-panel{
-      position:relative;
-      z-index:2;
-      background:#fff;
-      border:2px solid #000;
-      border-radius:20px;
-      width:min(820px, 92vw);
-      max-height:min(84vh, 900px);
-      padding:22px 24px;
-      overflow:auto;
-      box-shadow:var(--shadow);
+    .ranking-row {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 18px;
+      min-height: 34px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
     }
 
-    .final-rank-summary{
-      text-align:center;
-      font-size:24px;
-      font-weight:700;
-      line-height:1.4;
-      margin-bottom:14px;
+    .score-pill {
+      border: 2px solid #000;
+      border-radius: 999px;
+      padding: 6px 14px;
+      min-width: 88px;
+      text-align: center;
+      font-weight: 700;
+      background: #fff;
     }
 
-    .final-title{
-      text-align:center;
-      font-size:26px;
-      font-weight:700;
-      text-transform:lowercase;
-      margin-bottom:12px;
+    .score-pill.current {
+      color: var(--red);
+      border-color: var(--red);
     }
 
-    .final-list{
-      display:flex;
-      flex-direction:column;
-      gap:8px;
+    .total-line {
+      text-align: center;
+      font-size: 28px;
+      font-weight: 800;
     }
 
-    .final-row{
-      display:grid;
-      grid-template-columns:70px 1fr 130px;
-      align-items:center;
-      gap:10px;
-      border-radius:10px;
-      padding:8px 10px;
-      font-size:20px;
+    .total-line span {
+      margin-left: 8px;
     }
 
-    .final-row.top3{
-      background:rgba(255,215,0,0.48);
-      font-weight:700;
+    /* Message between sections */
+    .click-anywhere-message {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #fff;
+      text-align: center;
+      padding: 30px;
+      font-size: clamp(24px, 3.2vw, 38px);
+      font-weight: 700;
+      line-height: 1.5;
+      cursor: pointer;
+      z-index: 20;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 450ms ease;
     }
 
-    .final-row.current{
-      color:var(--red);
-      font-weight:700;
-      border:1px solid rgba(255,0,0,0.25);
-      background:rgba(255,0,0,0.05);
+    .click-anywhere-message.show {
+      opacity: 1;
+      pointer-events: auto;
     }
 
-    .final-empty{
-      text-align:center;
-      padding:24px 10px;
-      font-size:18px;
-      color:#444;
+    /* Final screen */
+    #fireworksCanvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      background: #fff;
     }
 
-    .final-footer{
-      margin-top:18px;
-      text-align:center;
-      font-size:22px;
-      line-height:1.45;
+    .final-wrap {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 26px;
     }
 
-    @media (max-width: 900px){
-      .choice-board{ height:min(430px, 48vh); }
-      .choice-label{font-size:46px;}
-      .choice-line{font-size:24px;}
-      .digit-circle{
-        width:110px;
-        height:110px;
-        font-size:48px;
+    .final-panel {
+      width: min(900px, 95vw);
+      max-height: 88vh;
+      overflow: auto;
+      background: #fff;
+      border: 2px solid #000;
+      border-radius: 24px;
+      padding: 26px 24px 22px;
+      box-shadow: 0 16px 32px rgba(0, 0, 0, 0.08);
+    }
+
+    .final-header {
+      text-align: center;
+      margin-bottom: 18px;
+    }
+
+    .final-header h2 {
+      margin: 0 0 8px 0;
+      font-size: clamp(28px, 4vw, 40px);
+    }
+
+    .final-header p {
+      margin: 0;
+      font-size: clamp(18px, 2vw, 22px);
+      font-weight: 700;
+    }
+
+    .leaderboard-title {
+      text-align: center;
+      font-size: 28px;
+      font-weight: 800;
+      margin: 18px 0 16px;
+    }
+
+    .leaderboard-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+
+    .leaderboard-item {
+      display: grid;
+      grid-template-columns: 90px 1fr 160px;
+      gap: 12px;
+      align-items: center;
+      border: 2px solid #000;
+      border-radius: 14px;
+      padding: 12px 14px;
+      font-size: 19px;
+      font-weight: 700;
+      background: #fff;
+    }
+
+    .leaderboard-item.top3 {
+      background: rgba(255, 215, 0, 0.55);
+    }
+
+    .leaderboard-item.current-user {
+      border-color: var(--red);
+      color: var(--red);
+      box-shadow: inset 0 0 0 2px rgba(255, 0, 0, 0.16);
+    }
+
+    .leaderboard-item.top3.current-user {
+      background: linear-gradient(90deg, rgba(255, 215, 0, 0.55), rgba(255, 0, 0, 0.12));
+    }
+
+    .leaderboard-rank,
+    .leaderboard-points {
+      text-align: center;
+    }
+
+    .leaderboard-id {
+      text-align: center;
+      word-break: break-word;
+    }
+
+    .final-thanks {
+      text-align: center;
+      font-size: clamp(20px, 2.2vw, 26px);
+      font-weight: 700;
+      line-height: 1.5;
+    }
+
+    .loading-text {
+      text-align: center;
+      font-size: 22px;
+      font-weight: 700;
+      color: #333;
+    }
+
+    .error-text {
+      color: var(--red);
+      font-weight: 700;
+    }
+
+    @media (max-width: 900px) {
+      .digit-circle {
+        top: 50%;
+      }
+
+      .leaderboard-item {
+        grid-template-columns: 72px 1fr 110px;
+        font-size: 16px;
+      }
+
+      .ranking-panel {
+        padding: 12px;
+      }
+
+      .total-line {
+        font-size: 24px;
       }
     }
 
-    @media (max-width: 640px){
-      .panel{
-        padding:26px 20px;
-        font-size:18px;
+    @media (max-width: 620px) {
+      .ranking-wrap {
+        height: 200px;
       }
-      .choice-board{ height:min(360px, 42vh); }
-      .choice-label{font-size:40px;}
-      .choice-line{font-size:22px;}
-      .leaderboard-row{
-        grid-template-columns:48px 1fr 95px;
-        font-size:16px;
+
+      .score-pill {
+        min-width: 74px;
+        padding: 5px 10px;
+        font-size: 14px;
       }
-      .total-points{font-size:24px;}
-      .message-screen{font-size:22px;}
-      .final-row{
-        grid-template-columns:54px 1fr 100px;
-        font-size:17px;
+
+      .ranking-title {
+        font-size: 20px;
+      }
+
+      .total-line {
+        font-size: 22px;
+      }
+
+      .leaderboard-item {
+        grid-template-columns: 60px 1fr 90px;
+        gap: 8px;
+        padding: 10px;
       }
     }
   </style>
 </head>
 <body>
   <div id="app"></div>
-  <div id="error-banner"></div>
 
   <script>
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxtElvNWY229MI9BQV-hNgQhWKy2HRjGtdhIz1z_Fq5xJnw58lQUf8PG4p4WRIaRIMZig/exec";
-    const X_VALUES = [10, 20, 30, 40, 50, 60];
-    const DIGIT_INTERVAL_MS = 3000;
-    const STORAGE_KEY = "behavior_experiment_official_participant_id";
+    /************************************************************
+     * CONFIG
+     ************************************************************/
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwpDd0GcDf0gfD6wGa-4oypi8_DGAx1tG-fffSM0o7ZwNiL3EPH-D4eDXMzMgs9HDEL3w/exec";
 
-    const state = {
-      participantId: null,
-      anonInputId: "",
-      taskOrder: null,
-      currentTask: null,
-      isPractice: false,
-      trialIndex: 0,
-      currentXValue: null,
-      totalPoints: 0,
-      leaderboardData: [],
-      currentDigit: null,
-      digitIntervalId: null,
-      targetWasPending: false,
-      blockSize: 0,
-      keyboardActive: false,
-      finishedMainTasks: {
-        ST: false,
-        MT: false
+    const CONFIG = {
+      stPracticeTrials: 3,
+      mtPracticeTrials: 3,
+      formalTrialsPerTask: 20,
+      optionA: {
+        label: 'A',
+        points: 10,
+        successProb: 0.8
       },
-      finalized: false
+      optionB: {
+        label: 'B',
+        minX: 1,
+        maxX: 60,
+        successProb: 0.2
+      },
+      digitIntervalMs: 2000,
+      choiceResponseMinDelayMs: 750,
+      choiceResponseMaxDelayMs: 1000,
+      betweenTrialFadeMs: 280,
+      leaderboardRefreshMs: 3500
     };
 
-    const app = document.getElementById("app");
-    const errorBanner = document.getElementById("error-banner");
+    /************************************************************
+     * GLOBAL STATE
+     ************************************************************/
+    const state = {
+      assignedParticipantId: null,
+      participantEnteredText: '',
+      assignedTaskOrder: null, // "ST_First" or "MT_First"
+      currentTotalPoints: 0,
+      currentTask: null,
+      currentTrial: 0,
+      currentScreenName: '',
+      currentTopFive: [],
+      isTransitioning: false,
+      submittedTrialKeys: new Set(),
 
-    let leaderboardPollTimer = null;
-    let currentCleanup = null;
-    let fireworksAnimationId = null;
-    let fireworksData = null;
+      // MT digit task state
+      digitTimer: null,
+      digitKeyListener: null,
+      currentDigit: null,
+      digitThreeActive: false,
+      digitThreeHandled: false,
+      digitCircleEl: null,
 
-    function showError(message) {
-      errorBanner.textContent = message;
-      errorBanner.style.display = "block";
-      clearTimeout(showError._timer);
-      showError._timer = setTimeout(() => {
-        errorBanner.style.display = "none";
-      }, 6000);
+      // ranking
+      leaderboardPollTimer: null,
+
+      // fireworks
+      fireworksAnimFrame: null
+    };
+
+    const app = document.getElementById('app');
+
+    /************************************************************
+     * BASIC HELPERS
+     ************************************************************/
+    function randomInt(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+    }
+
+    function softRandomTaskOrder() {
+      return Math.random() < 0.5 ? 'ST_First' : 'MT_First';
+    }
+
+    function awardPoints(choice, xValue) {
+      if (choice === 'A') {
+        return Math.random() < CONFIG.optionA.successProb ? CONFIG.optionA.points : 0;
+      }
+      return Math.random() < CONFIG.optionB.successProb ? xValue : 0;
+    }
+
+    function buildTrialKey(task, trialIndex) {
+      return `${state.assignedParticipantId || 'NONE'}__${task}__${trialIndex}`;
     }
 
     function clearApp() {
-      if (typeof currentCleanup === "function") {
-        currentCleanup();
-        currentCleanup = null;
+      stopDigitTask();
+      stopLeaderboardPolling();
+      stopFireworks();
+      app.innerHTML = '';
+    }
+
+    function mountScreen(screenEl) {
+      app.appendChild(screenEl);
+      requestAnimationFrame(() => {
+        screenEl.classList.add('active');
+      });
+    }
+
+    async function fadeOutAndReplace(currentScreen, nextBuilder) {
+      if (state.isTransitioning) return;
+      state.isTransitioning = true;
+      if (currentScreen) {
+        currentScreen.classList.remove('active');
+        await sleep(500);
       }
-      app.innerHTML = "";
+      clearApp();
+      nextBuilder();
+      state.isTransitioning = false;
     }
 
-    function randomChoice(arr) {
-      return arr[Math.floor(Math.random() * arr.length)];
+    function createScreen() {
+      const screen = document.createElement('div');
+      screen.className = 'screen';
+      return screen;
     }
 
-    function weightedOutcome(choseA, xValue) {
-      if (choseA === 1) {
-        return Math.random() < 0.8 ? 10 : 0;
+    function createCenteredPanelScreen(innerHtml) {
+      const screen = createScreen();
+      screen.innerHTML = `
+        <div class="center-wrap">
+          <div class="panel">
+            ${innerHtml}
+          </div>
+        </div>
+      `;
+      return screen;
+    }
+
+    function showStatus(el, text, isError = false) {
+      el.textContent = text;
+      el.classList.toggle('error-text', isError);
+    }
+
+    /************************************************************
+     * BACKEND
+     ************************************************************/
+    async function postJSON(payload) {
+      const res = await fetch(WEB_APP_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'text/plain;charset=utf-8'
+        },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) {
+        throw new Error(`Network error: ${res.status}`);
       }
-      return Math.random() < 0.2 ? xValue : 0;
+      return res.json();
     }
 
-    function fadeToWhiteThen(callback, delay = 300) {
-      const overlay = document.createElement("div");
-      overlay.style.position = "fixed";
-      overlay.style.inset = "0";
-      overlay.style.background = "#fff";
-      overlay.style.opacity = "0";
-      overlay.style.zIndex = "9998";
-      overlay.style.pointerEvents = "none";
-      overlay.style.transition = "opacity 360ms ease";
-      document.body.appendChild(overlay);
-
-      requestAnimationFrame(() => overlay.style.opacity = "1");
-
-      setTimeout(() => {
-        overlay.remove();
-        callback();
-      }, delay + 180);
+    async function getJSON(params) {
+      const url = new URL(WEB_APP_URL);
+      Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+      const res = await fetch(url.toString(), { method: 'GET' });
+      if (!res.ok) {
+        throw new Error(`Network error: ${res.status}`);
+      }
+      return res.json();
     }
 
-    async function initParticipant() {
-      const savedId = localStorage.getItem(STORAGE_KEY);
-      if (savedId) {
-        state.participantId = savedId;
-        return;
+    async function registerParticipant() {
+      const data = await postJSON({ action: 'register_participant' });
+      if (!data.success || !data.Participant_ID) {
+        throw new Error(data.error || 'Failed to register participant.');
+      }
+      state.assignedParticipantId = String(data.Participant_ID);
+      return state.assignedParticipantId;
+    }
+
+    async function saveFormalTrial({ task, trialIndex, choseA, xValue, pointsAwarded }) {
+      const trialKey = buildTrialKey(task, trialIndex);
+      if (state.submittedTrialKeys.has(trialKey)) {
+        throw new Error(`Duplicate submission prevented for ${trialKey}`);
       }
 
-      const response = await fetch(`${WEB_APP_URL}?mode=init_participant`);
-      if (!response.ok) throw new Error("Failed to initialize participant.");
-
-      const data = await response.json();
-      if (!data.success || !data.participant_id) {
-        throw new Error(data.error || "Failed to get participant ID.");
-      }
-
-      state.participantId = data.participant_id;
-      localStorage.setItem(STORAGE_KEY, state.participantId);
-    }
-
-    async function uploadMainTrial(payload) {
-      const fixedParticipantId = state.participantId || localStorage.getItem(STORAGE_KEY);
-
-      const body = {
-        action: "save_trial",
-        participant_id: fixedParticipantId,
-        anon_input_id: state.anonInputId || "",
-        task: payload.task,
-        trial_index: payload.trialIndex,
-        chose_a: payload.choseA,
-        x_value: payload.xValue,
-        points_awarded: payload.pointsAwarded,
-        task_order: state.taskOrder
+      const payload = {
+        action: 'save_trial',
+        Participant_ID: state.assignedParticipantId,
+        Task: task,
+        Trial_Index: trialIndex,
+        Chose_A: choseA,
+        X_Value: xValue,
+        Points_Awarded: pointsAwarded,
+        Task_Order: state.assignedTaskOrder
       };
 
-      const response = await fetch(WEB_APP_URL, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify(body)
-      });
+      const data = await postJSON(payload);
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to save trial.');
+      }
 
-      if (!response.ok) throw new Error("Network error while uploading trial.");
-      const data = await response.json();
-      if (!data.success) throw new Error(data.error || "Server rejected trial upload.");
+      state.submittedTrialKeys.add(trialKey);
       return data;
     }
 
-    async function finalizeParticipant() {
-      if (state.finalized) return;
-      state.finalized = true;
+    async function fetchTopFiveRanking() {
+      const data = await getJSON({ action: 'get_ranking' });
+      if (!data.success) throw new Error(data.error || 'Failed to fetch ranking.');
+      return Array.isArray(data.ranking) ? data.ranking : [];
+    }
 
-      const fixedParticipantId = state.participantId || localStorage.getItem(STORAGE_KEY);
-
-      const response = await fetch(WEB_APP_URL, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({
-          action: "finalize_participant",
-          participant_id: fixedParticipantId,
-          total_points: state.totalPoints
-        })
+    async function fetchParticipantSummary(participantId) {
+      const data = await getJSON({
+        action: 'get_participant_summary',
+        participant_id: participantId
       });
-
-      if (!response.ok) throw new Error("Failed to finalize participant.");
-      const data = await response.json();
-      if (!data.success) throw new Error(data.error || "Finalize failed.");
+      if (!data.success) throw new Error(data.error || 'Failed to fetch summary.');
+      return data.summary;
     }
 
-    async function fetchLeaderboard() {
-      try {
-        const response = await fetch(`${WEB_APP_URL}?mode=ranking`);
-        if (!response.ok) throw new Error("Failed to retrieve leaderboard.");
-        const data = await response.json();
-        if (!data.success || !Array.isArray(data.data)) {
-          throw new Error(data.error || "Invalid leaderboard response.");
+    async function fetchAllRawData() {
+      const data = await getJSON({ action: 'get_all_raw_data' });
+      if (!data.success) throw new Error(data.error || 'Failed to fetch raw data.');
+      return Array.isArray(data.raw_data) ? data.raw_data : [];
+    }
+
+    async function buildFullLeaderboardFromRawData() {
+      const rows = await fetchAllRawData();
+      const totalsMap = new Map();
+
+      for (const row of rows) {
+        const id = String(row.Participant_ID || '');
+        const pts = Number(row.Points_Awarded) || 0;
+        if (!id) continue;
+        if (!totalsMap.has(id)) {
+          totalsMap.set(id, { Participant_ID: id, Total_Points: 0, Trial_Count: 0 });
         }
-
-        state.leaderboardData = data.data.map(row => ({
-          rank: row.rank,
-          Participant_ID: String(row.Participant_ID),
-          Total_Points: Number(row.Total_Points) || 0
-        }));
-
-        refreshDynamicLeaderboardUI();
-      } catch (err) {
-        console.error(err);
+        const entry = totalsMap.get(id);
+        entry.Total_Points += pts;
+        entry.Trial_Count += 1;
       }
+
+      const completed = [...totalsMap.values()]
+        .filter(item => item.Trial_Count === 40)
+        .map(item => ({
+          Participant_ID: item.Participant_ID,
+          Total_Points: item.Total_Points
+        }))
+        .sort((a, b) => b.Total_Points - a.Total_Points);
+
+      return completed;
     }
 
-    function setLeaderboardPolling(active) {
-      clearInterval(leaderboardPollTimer);
-      leaderboardPollTimer = null;
-      if (active) {
-        fetchLeaderboard();
-        leaderboardPollTimer = setInterval(fetchLeaderboard, 3000);
+    /************************************************************
+     * RANKING DISPLAY HELPERS
+     ************************************************************/
+    function mergeCurrentParticipantIntoTopFive(remoteTopFive, currentPoints, participantId) {
+      const list = (remoteTopFive || []).map(item => ({
+        Participant_ID: String(item.Participant_ID),
+        Total_Points: Number(item.Total_Points) || 0,
+        isCurrent: false
+      }));
+
+      if (!participantId) return list.slice(0, 5);
+
+      const existingIndex = list.findIndex(x => x.Participant_ID === participantId);
+      if (existingIndex >= 0) {
+        list[existingIndex].Total_Points = currentPoints;
+        list[existingIndex].isCurrent = true;
+      } else {
+        list.push({
+          Participant_ID: participantId,
+          Total_Points: currentPoints,
+          isCurrent: true
+        });
       }
+
+      list.sort((a, b) => b.Total_Points - a.Total_Points);
+      return list.slice(0, 5);
     }
 
-    function computeCurrentRank() {
-      const idx = state.leaderboardData.findIndex(
-        row => String(row.Participant_ID) === String(state.participantId)
+    function renderTopFive(rankingPanelEl, remoteTopFive) {
+      const merged = mergeCurrentParticipantIntoTopFive(
+        remoteTopFive,
+        state.currentTotalPoints,
+        state.assignedParticipantId
       );
-      return idx >= 0 ? idx + 1 : null;
+
+      const rowEl = rankingPanelEl.querySelector('.ranking-row');
+      const totalEl = rankingPanelEl.querySelector('.total-points-value');
+
+      rowEl.innerHTML = '';
+      for (const item of merged) {
+        const pill = document.createElement('div');
+        pill.className = 'score-pill' + (item.Participant_ID === state.assignedParticipantId ? ' current' : '');
+        pill.textContent = `${item.Total_Points}`;
+        rowEl.appendChild(pill);
+      }
+
+      totalEl.textContent = String(state.currentTotalPoints);
     }
 
-    function getParticipantEntry() {
-      return state.leaderboardData.find(
-        row => String(row.Participant_ID) === String(state.participantId)
-      ) || null;
-    }
-
-    function refreshDynamicLeaderboardUI() {
-      document.querySelectorAll("[data-live-leaderboard='main']").forEach(box => {
-        renderMainLeaderboardInto(box);
-      });
-
-      const finalContainer = document.querySelector("[data-final-ranking='true']");
-      if (finalContainer) {
-        renderFinalRankingInto(finalContainer);
+    async function refreshTopFive(rankingPanelEl) {
+      try {
+        const topFive = await fetchTopFiveRanking();
+        state.currentTopFive = topFive;
+        renderTopFive(rankingPanelEl, topFive);
+      } catch (err) {
+        renderTopFive(rankingPanelEl, state.currentTopFive);
       }
     }
 
-    function renderMainLeaderboardInto(container) {
-      container.innerHTML = "";
-
-      const title = document.createElement("div");
-      title.className = "leaderboard-title";
-      title.textContent = "leaderboard";
-      container.appendChild(title);
-
-      const list = document.createElement("div");
-      list.className = "leaderboard-list";
-
-      const top5 = state.leaderboardData.slice(0, 5);
-
-      if (top5.length === 0) {
-        const empty = document.createElement("div");
-        empty.className = "leaderboard-empty";
-        empty.textContent = "No completed participants yet";
-        list.appendChild(empty);
-      } else {
-        top5.forEach((row, i) => {
-          const line = document.createElement("div");
-          line.className = "leaderboard-row";
-          if (String(row.Participant_ID) === String(state.participantId)) {
-            line.classList.add("current");
-          }
-          line.innerHTML = `
-            <div>${i + 1}.</div>
-            <div>${row.Participant_ID}</div>
-            <div>${row.Total_Points}</div>
-          `;
-          list.appendChild(line);
-        });
-      }
-
-      container.appendChild(list);
-
-      const total = document.createElement("div");
-      total.className = "total-points";
-      total.innerHTML = `Total Points:<br>${state.totalPoints}`;
-      container.appendChild(total);
+    function startLeaderboardPolling(rankingPanelEl) {
+      stopLeaderboardPolling();
+      refreshTopFive(rankingPanelEl);
+      state.leaderboardPollTimer = setInterval(() => {
+        refreshTopFive(rankingPanelEl);
+      }, CONFIG.leaderboardRefreshMs);
     }
 
-    function renderFinalRankingInto(container) {
-      container.innerHTML = "";
-
-      const participantRow = getParticipantEntry();
-      const currentRank = computeCurrentRank();
-
-      const header = document.createElement("div");
-      header.className = "final-rank-summary";
-      header.innerHTML = `
-        Your Final Rank: ${currentRank ?? "-"}<br>
-        Your Total Score: ${participantRow ? participantRow.Total_Points : state.totalPoints}
-      `;
-      container.appendChild(header);
-
-      const title = document.createElement("div");
-      title.className = "final-title";
-      title.textContent = "leaderboard";
-      container.appendChild(title);
-
-      if (state.leaderboardData.length === 0) {
-        const empty = document.createElement("div");
-        empty.className = "final-empty";
-        empty.textContent = "No completed participants yet";
-        container.appendChild(empty);
-      } else {
-        const list = document.createElement("div");
-        list.className = "final-list";
-
-        state.leaderboardData.forEach((row, index) => {
-          const div = document.createElement("div");
-          div.className = "final-row";
-          if (index < 3) div.classList.add("top3");
-          if (String(row.Participant_ID) === String(state.participantId)) div.classList.add("current");
-
-          div.innerHTML = `
-            <div>${index + 1}</div>
-            <div>${row.Participant_ID}</div>
-            <div>${row.Total_Points}</div>
-          `;
-          list.appendChild(div);
-        });
-
-        container.appendChild(list);
-      }
-
-      const footer = document.createElement("div");
-      footer.className = "final-footer";
-      footer.textContent = "Congratulations on completing all the sections! Thank you for participating!";
-      container.appendChild(footer);
-    }
-
-    function renderWelcomeScreen() {
-      clearApp();
-      setLeaderboardPolling(false);
-
-      const screen = document.createElement("div");
-      screen.className = "screen";
-
-      const panel = document.createElement("div");
-      panel.className = "panel small";
-      panel.innerHTML = `
-        <p>Welcome to the experiment
-Please enter your Participant ID below
-(we won't be able to see your ID, it's going to be completely anonymous)</p>
-      `;
-
-      const wrap = document.createElement("div");
-      wrap.className = "input-wrap";
-
-      const input = document.createElement("input");
-      input.type = "text";
-      input.placeholder = "Anonymous ID";
-
-      const button = document.createElement("button");
-      button.className = "primary-btn";
-      button.textContent = "Start";
-
-      button.addEventListener("click", async () => {
-        try {
-          state.anonInputId = input.value.trim();
-          state.taskOrder = Math.random() < 0.5 ? "ST_first" : "MT_first";
-          await initParticipant();
-
-          if (state.taskOrder === "ST_first") {
-            renderInstructionsScreen("ST");
-          } else {
-            renderInstructionsScreen("MT");
-          }
-        } catch (err) {
-          console.error(err);
-          showError("Failed to start experiment.\nPlease try again.");
-        }
-      });
-
-      wrap.appendChild(input);
-      wrap.appendChild(button);
-      panel.appendChild(wrap);
-      screen.appendChild(panel);
-      app.appendChild(screen);
-    }
-
-    function renderInstructionsScreen(task) {
-      clearApp();
-      setLeaderboardPolling(false);
-
-      const screen = document.createElement("div");
-      screen.className = "screen";
-
-      const panel = document.createElement("div");
-      panel.className = "panel";
-
-      const text = task === "ST"
-        ? `In this experiment you are going to choose between Option A and Option B.
-The score for this option is shown below.
-The percentage indicates the probability that you will receive this score if you select this option.
-
-Click "Start Practice" to start a few practice trials to get familiar with this!`
-        : `In this experiment you are going to choose between Option A and Option B.
-The score for this option will be shown below.
-The percentage indicates the probability that you will receive this score if you select this option.
-At the same time, numbers 1 through 9 will appear randomly in the center of the screen.
-When you see the number 3, press the spacebar.
-
-Click "Start Practice" to start a few practice trials to get familiar with this!`;
-
-      panel.innerHTML = `<p>${text}</p>`;
-
-      const button = document.createElement("button");
-      button.className = "primary-btn";
-      button.textContent = "Start Practice";
-      button.addEventListener("click", () => {
-        startBlock(task, true);
-      });
-
-      const wrap = document.createElement("div");
-      wrap.className = "input-wrap";
-      wrap.appendChild(button);
-      panel.appendChild(wrap);
-
-      screen.appendChild(panel);
-      app.appendChild(screen);
-    }
-
-    function renderPartTransitionScreen(nextTask) {
-      clearApp();
-      setLeaderboardPolling(false);
-
-      const screen = document.createElement("div");
-      screen.className = "screen";
-
-      const wrap = document.createElement("div");
-      wrap.className = "message-screen";
-
-      const text = document.createElement("div");
-      text.className = "message-text";
-      text.textContent = `Congratulations! You’ve completed Part 1. Now you’ll move on to Part 2.
-Click "Start Practice" to start a few practice trials to get familiar with this!`;
-
-      const button = document.createElement("button");
-      button.className = "primary-btn";
-      button.textContent = "Start Practice";
-      button.addEventListener("click", () => {
-        startBlock(nextTask, true);
-      });
-
-      wrap.appendChild(text);
-      wrap.appendChild(button);
-      screen.appendChild(wrap);
-      app.appendChild(screen);
-    }
-
-    function renderPracticeDoneScreen(nextTask) {
-      clearApp();
-      setLeaderboardPolling(false);
-
-      const screen = document.createElement("div");
-      screen.className = "screen";
-
-      const wrap = document.createElement("div");
-      wrap.className = "message-screen";
-
-      const text = document.createElement("div");
-      text.className = "message-text";
-      text.textContent = "Well done! You've completed the practice section. Now let's move on to the main section.";
-
-      wrap.appendChild(text);
-      screen.appendChild(wrap);
-      app.appendChild(screen);
-
-      setTimeout(() => {
-        fadeToWhiteThen(() => startBlock(nextTask, false), 360);
-      }, 950);
-    }
-
-    function renderFinalScreen() {
-      clearApp();
-      setLeaderboardPolling(true);
-
-      const screen = document.createElement("div");
-      screen.className = "screen";
-
-      const layout = document.createElement("div");
-      layout.className = "final-layout";
-
-      const canvas = document.createElement("canvas");
-      canvas.id = "fireworks";
-
-      const panel = document.createElement("div");
-      panel.className = "final-panel";
-
-      const rankingContainer = document.createElement("div");
-      rankingContainer.setAttribute("data-final-ranking", "true");
-      rankingContainer.innerHTML = `<div style="text-align:center;padding:20px;">Loading ranking...</div>`;
-
-      panel.appendChild(rankingContainer);
-      layout.appendChild(canvas);
-      layout.appendChild(panel);
-      screen.appendChild(layout);
-      app.appendChild(screen);
-
-      refreshDynamicLeaderboardUI();
-      startFireworks(canvas);
-
-      currentCleanup = () => {
-        stopFireworks();
-      };
-    }
-
-    function getSecondTask() {
-      return state.taskOrder === "ST_first" ? "MT" : "ST";
-    }
-
-    function startBlock(task, isPractice) {
-      clearApp();
-
-      state.currentTask = task;
-      state.isPractice = isPractice;
-      state.trialIndex = 1;
-      state.blockSize = isPractice ? 3 : 20;
-
-      renderTrialScreen(task, isPractice);
-      if (!isPractice) setLeaderboardPolling(true);
-      else setLeaderboardPolling(false);
-    }
-
-    async function proceedAfterBlock(task, isPractice) {
-      if (isPractice) {
-        renderPracticeDoneScreen(task);
-        return;
-      }
-
-      state.finishedMainTasks[task] = true;
-      const bothDone = state.finishedMainTasks.ST && state.finishedMainTasks.MT;
-
-      if (bothDone) {
-        try {
-          await finalizeParticipant();
-          await fetchLeaderboard();
-        } catch (err) {
-          console.error(err);
-          showError("Final score upload failed.\nPlease do not close the page and try again.");
-        }
-
-        fadeToWhiteThen(() => renderFinalScreen(), 300);
-      } else {
-        const nextTask = getSecondTask();
-        fadeToWhiteThen(() => renderPartTransitionScreen(nextTask), 300);
+    function stopLeaderboardPolling() {
+      if (state.leaderboardPollTimer) {
+        clearInterval(state.leaderboardPollTimer);
+        state.leaderboardPollTimer = null;
       }
     }
 
-    function renderTrialScreen(task, isPractice) {
-      clearApp();
+    /************************************************************
+     * DIGIT TASK HELPERS (MT)
+     ************************************************************/
+    function attachDigitCircle(circleEl) {
+      state.digitCircleEl = circleEl;
+    }
 
-      const screen = document.createElement("div");
-      screen.className = "screen";
+    function shakeDigitCircle() {
+      if (!state.digitCircleEl) return;
+      state.digitCircleEl.classList.remove('shake');
+      void state.digitCircleEl.offsetWidth;
+      state.digitCircleEl.classList.add('shake');
+    }
 
-      const wrap = document.createElement("div");
-      wrap.className = "task-screen";
-
-      const title = document.createElement("div");
-      title.className = "task-title";
-      title.textContent = `${task} ${isPractice ? "Practice" : "Main"} — Trial ${state.trialIndex} / ${state.blockSize}`;
-      wrap.appendChild(title);
-
-      const mainArea = document.createElement("div");
-      mainArea.className = "task-main-area";
-
-      const board = document.createElement("div");
-      board.className = "choice-board";
-
-      state.currentXValue = randomChoice(X_VALUES);
-
-      const left = document.createElement("div");
-      left.className = "choice-half";
-      left.innerHTML = `
-        <div class="choice-content">
-          <div class="choice-label">A</div>
-          <div class="choice-line">10 Points</div>
-          <div class="choice-line">80%</div>
-          <div class="outcome-text" data-outcome="A"></div>
-        </div>
-      `;
-
-      const right = document.createElement("div");
-      right.className = "choice-half";
-      right.innerHTML = `
-        <div class="choice-content">
-          <div class="choice-label">B</div>
-          <div class="choice-line">${state.currentXValue} Points</div>
-          <div class="choice-line">20%</div>
-          <div class="outcome-text" data-outcome="B"></div>
-        </div>
-      `;
-
-      const divider = document.createElement("div");
-      divider.className = "vertical-divider";
-
-      board.appendChild(left);
-      board.appendChild(right);
-      board.appendChild(divider);
-
-      let digitCircle = null;
-      if (task === "MT") {
-        digitCircle = document.createElement("div");
-        digitCircle.className = "digit-circle";
-        digitCircle.textContent = "0";
-        board.appendChild(digitCircle);
+    function onDigitCycleTick() {
+      if (state.currentDigit === 3 && !state.digitThreeHandled) {
+        shakeDigitCircle();
       }
 
-      mainArea.appendChild(board);
+      state.currentDigit = randomInt(0, 9);
+      state.digitThreeActive = state.currentDigit === 3;
+      state.digitThreeHandled = false;
 
-      if (!isPractice) {
-        const leaderboardBox = document.createElement("div");
-        leaderboardBox.className = "leaderboard-box";
-        leaderboardBox.setAttribute("data-live-leaderboard", "main");
-        mainArea.appendChild(leaderboardBox);
+      if (state.digitCircleEl) {
+        state.digitCircleEl.textContent = String(state.currentDigit);
       }
-
-      wrap.appendChild(mainArea);
-      screen.appendChild(wrap);
-      app.appendChild(screen);
-
-      if (!isPractice) refreshDynamicLeaderboardUI();
-
-      let choiceLocked = false;
-
-      const handleChoice = (choice) => {
-        if (choiceLocked) return;
-        choiceLocked = true;
-
-        left.classList.add("disabled");
-        right.classList.add("disabled");
-        left.removeEventListener("click", leftListener);
-        right.removeEventListener("click", rightListener);
-
-        const choseA = choice === "A" ? 1 : 0;
-        const chosenHalf = choseA ? left : right;
-        const otherHalf = choseA ? right : left;
-
-        chosenHalf.classList.add("selected");
-        otherHalf.classList.add("dimmed");
-
-        const pointsAwarded = weightedOutcome(choseA, state.currentXValue);
-        state.totalPoints += pointsAwarded;
-
-        const outcomeEl = chosenHalf.querySelector(`[data-outcome="${choice}"]`);
-        outcomeEl.textContent = `+${pointsAwarded}`;
-        outcomeEl.classList.add("show");
-
-        if (!isPractice) {
-          refreshDynamicLeaderboardUI();
-
-          uploadMainTrial({
-            task,
-            trialIndex: state.trialIndex,
-            choseA,
-            xValue: state.currentXValue,
-            pointsAwarded
-          }).then(() => {
-            fetchLeaderboard();
-          }).catch(err => {
-            console.error(err);
-            showError("A server error occurred while uploading the trial.\nThis trial may not have been saved.");
-          });
-        }
-
-        setTimeout(() => {
-          board.classList.add("fade");
-        }, 180);
-
-        setTimeout(() => {
-          stopDigitTask();
-
-          if (state.trialIndex < state.blockSize) {
-            state.trialIndex += 1;
-            renderTrialScreen(task, isPractice);
-          } else {
-            proceedAfterBlock(task, isPractice);
-          }
-        }, 420);
-      };
-
-      const leftListener = () => handleChoice("A");
-      const rightListener = () => handleChoice("B");
-
-      left.addEventListener("click", leftListener, { passive: true });
-      right.addEventListener("click", rightListener, { passive: true });
-
-      if (task === "MT" && digitCircle) {
-        startDigitTask(digitCircle);
-      }
-
-      currentCleanup = () => {
-        stopDigitTask();
-        left.removeEventListener("click", leftListener);
-        right.removeEventListener("click", rightListener);
-      };
     }
 
     function startDigitTask(circleEl) {
       stopDigitTask();
+      attachDigitCircle(circleEl);
 
-      state.keyboardActive = true;
-      state.currentDigit = null;
-      state.targetWasPending = false;
+      state.currentDigit = randomInt(0, 9);
+      state.digitThreeActive = state.currentDigit === 3;
+      state.digitThreeHandled = false;
+      circleEl.textContent = String(state.currentDigit);
 
-      const keyHandler = (e) => {
-        if (!state.keyboardActive) return;
-        if (e.code !== "Space") return;
-        e.preventDefault();
+      state.digitKeyListener = function(event) {
+        if (event.code !== 'Space') return;
+        event.preventDefault();
 
-        if (state.currentDigit === 3 && state.targetWasPending) {
-          state.targetWasPending = false;
+        if (state.currentDigit === 3) {
+          state.digitThreeHandled = true;
         } else {
-          triggerCircleShake(circleEl);
+          shakeDigitCircle();
         }
       };
 
-      window.addEventListener("keydown", keyHandler);
-
-      const updateDigit = () => {
-        if (state.currentDigit === 3 && state.targetWasPending) {
-          triggerCircleShake(circleEl);
-          state.targetWasPending = false;
-        }
-
-        const digit = Math.floor(Math.random() * 10);
-        state.currentDigit = digit;
-        circleEl.textContent = digit;
-        state.targetWasPending = digit === 3;
-      };
-
-      updateDigit();
-      state.digitIntervalId = setInterval(updateDigit, DIGIT_INTERVAL_MS);
-      startDigitTask._keyHandler = keyHandler;
+      window.addEventListener('keydown', state.digitKeyListener);
+      state.digitTimer = setInterval(onDigitCycleTick, CONFIG.digitIntervalMs);
     }
 
     function stopDigitTask() {
-      if (state.digitIntervalId) {
-        clearInterval(state.digitIntervalId);
-        state.digitIntervalId = null;
+      if (state.digitTimer) {
+        clearInterval(state.digitTimer);
+        state.digitTimer = null;
       }
-
-      if (state.keyboardActive && startDigitTask._keyHandler) {
-        window.removeEventListener("keydown", startDigitTask._keyHandler);
+      if (state.digitKeyListener) {
+        window.removeEventListener('keydown', state.digitKeyListener);
+        state.digitKeyListener = null;
       }
-
-      state.keyboardActive = false;
       state.currentDigit = null;
-      state.targetWasPending = false;
-      startDigitTask._keyHandler = null;
+      state.digitThreeActive = false;
+      state.digitThreeHandled = false;
+      state.digitCircleEl = null;
     }
 
-    function triggerCircleShake(circleEl) {
-      if (!circleEl) return;
-      circleEl.classList.remove("shake");
-      void circleEl.offsetWidth;
-      circleEl.classList.add("shake");
+    /************************************************************
+     * TASK SCREEN BUILDERS
+     ************************************************************/
+    function createRankingPanel() {
+      const wrap = document.createElement('div');
+      wrap.className = 'ranking-wrap';
+      wrap.innerHTML = `
+        <div class="ranking-panel">
+          <div class="ranking-title">TOP 5 RANKING</div>
+          <div class="ranking-row"></div>
+          <div class="total-line">Total Points: <span class="total-points-value">0</span></div>
+        </div>
+      `;
+      return wrap;
     }
 
+    function createChoiceStage(xValue, withCenterDigit = false) {
+      const stage = document.createElement('div');
+      stage.className = 'choice-stage';
+      stage.innerHTML = `
+        <div class="divider"></div>
+        <div class="choice-wrapper">
+          <div class="choice-half choice-half-left" data-choice="A">
+            <div class="choice-content">
+              <div class="option-label">A</div>
+              <div class="option-points">10 Points</div>
+              <div class="option-prob">80%</div>
+            </div>
+            <div class="feedback left"></div>
+          </div>
+          <div class="choice-half choice-half-right" data-choice="B">
+            <div class="choice-content">
+              <div class="option-label">B</div>
+              <div class="option-points">${xValue} Points</div>
+              <div class="option-prob">20%</div>
+            </div>
+            <div class="feedback right"></div>
+          </div>
+        </div>
+      `;
+
+      if (withCenterDigit) {
+        const digit = document.createElement('div');
+        digit.className = 'digit-circle';
+        digit.textContent = '0';
+        stage.appendChild(digit);
+      }
+
+      return stage;
+    }
+
+    function showClickAnywhereMessage(container, message, onClick) {
+      const overlay = document.createElement('div');
+      overlay.className = 'click-anywhere-message';
+      overlay.innerHTML = `<div>${message}</div>`;
+      overlay.addEventListener('click', () => onClick(), { once: true });
+      container.appendChild(overlay);
+      requestAnimationFrame(() => overlay.classList.add('show'));
+    }
+
+    async function runTaskBlock({
+      taskType,
+      isPractice,
+      withDigitTask,
+      nextScreenBuilder
+    }) {
+      clearApp();
+
+      const screen = createScreen();
+      const outer = document.createElement('div');
+      outer.className = 'task-screen-inner';
+
+      const mainRegion = document.createElement('div');
+      mainRegion.className = 'task-main-region';
+
+      outer.appendChild(mainRegion);
+
+      let rankingPanel = null;
+      if (!isPractice) {
+        rankingPanel = createRankingPanel();
+        outer.appendChild(rankingPanel);
+      }
+
+      screen.appendChild(outer);
+      mountScreen(screen);
+
+      if (!isPractice && rankingPanel) {
+        renderTopFive(rankingPanel, state.currentTopFive || []);
+        startLeaderboardPolling(rankingPanel);
+      }
+
+      const totalTrials = isPractice
+        ? (taskType === 'ST' ? CONFIG.stPracticeTrials : CONFIG.mtPracticeTrials)
+        : CONFIG.formalTrialsPerTask;
+
+      state.currentTask = taskType;
+
+      let trialIndexWithinTask = 0;
+      let blockActive = true;
+      let awaitingResponse = false;
+
+      async function finishBlock() {
+        blockActive = false;
+        if (withDigitTask) stopDigitTask();
+        if (!isPractice) stopLeaderboardPolling();
+
+        showClickAnywhereMessage(
+          mainRegion,
+          `Well done! You've completed the practice section. Now click anywhere to move on to the main section.`,
+          async () => {
+            await fadeOutAndReplace(screen, nextScreenBuilder);
+          }
+        );
+      }
+
+      async function finishFormalBlock() {
+        blockActive = false;
+        if (withDigitTask) stopDigitTask();
+        if (!isPractice) stopLeaderboardPolling();
+        await fadeOutAndReplace(screen, nextScreenBuilder);
+      }
+
+      async function presentTrial() {
+        if (!blockActive) return;
+
+        if (trialIndexWithinTask >= totalTrials) {
+          if (isPractice) {
+            return finishBlock();
+          }
+          return finishFormalBlock();
+        }
+
+        trialIndexWithinTask += 1;
+        state.currentTrial = trialIndexWithinTask;
+
+        const xValue = randomInt(CONFIG.optionB.minX, CONFIG.optionB.maxX);
+        const stage = createChoiceStage(xValue, withDigitTask);
+        mainRegion.appendChild(stage);
+
+        if (withDigitTask) {
+          const digitCircle = stage.querySelector('.digit-circle');
+          if (trialIndexWithinTask === 1) {
+            startDigitTask(digitCircle);
+          } else {
+            attachDigitCircle(digitCircle);
+            if (state.currentDigit === null) {
+              startDigitTask(digitCircle);
+            } else {
+              digitCircle.textContent = String(state.currentDigit);
+            }
+          }
+        }
+
+        const leftHalf = stage.querySelector('.choice-half-left');
+        const rightHalf = stage.querySelector('.choice-half-right');
+        const leftFb = stage.querySelector('.feedback.left');
+        const rightFb = stage.querySelector('.feedback.right');
+
+        async function handleChoice(choice) {
+          if (awaitingResponse || !blockActive) return;
+          awaitingResponse = true;
+
+          leftHalf.classList.add('disabled');
+          rightHalf.classList.add('disabled');
+
+          const awarded = awardPoints(choice, xValue);
+          const choseA = choice === 'A' ? 1 : 0;
+          const chosenFb = choice === 'A' ? leftFb : rightFb;
+          chosenFb.textContent = `+${awarded}`;
+          chosenFb.classList.add('visible');
+
+          if (!isPractice) {
+            try {
+              await saveFormalTrial({
+                task: taskType,
+                trialIndex: trialIndexWithinTask,
+                choseA,
+                xValue,
+                pointsAwarded: awarded
+              });
+              state.currentTotalPoints += awarded;
+              if (rankingPanel) {
+                await refreshTopFive(rankingPanel);
+              }
+            } catch (err) {
+              chosenFb.classList.remove('visible');
+              awaitingResponse = false;
+              leftHalf.classList.remove('disabled');
+              rightHalf.classList.remove('disabled');
+              alert(`Failed to save trial. Please check your connection and try again.\n\n${err.message}`);
+              return;
+            }
+          }
+
+          await sleep(randomInt(CONFIG.choiceResponseMinDelayMs, CONFIG.choiceResponseMaxDelayMs));
+          stage.classList.add('hidden');
+          await sleep(CONFIG.betweenTrialFadeMs);
+          stage.remove();
+          awaitingResponse = false;
+          presentTrial();
+        }
+
+        leftHalf.addEventListener('click', () => handleChoice('A'));
+        rightHalf.addEventListener('click', () => handleChoice('B'));
+      }
+
+      presentTrial();
+    }
+
+    /************************************************************
+     * SCREENS
+     ************************************************************/
+    function showWelcomeScreen() {
+      state.currentScreenName = 'welcome';
+
+      const screen = createScreen();
+      screen.innerHTML = `
+        <div class="center-wrap">
+          <div class="panel">
+            <h1>Welcome to the experiment</h1>
+            <p>Please enter your Participant ID below</p>
+            <p class="small-note">(we won't be able to see your ID, it's going to be completely anonymous)</p>
+            <input class="text-input" id="participantTextInput" type="text" placeholder="Enter any anonymous code you want" />
+            <button class="btn" id="startBtn">Start</button>
+            <div class="status-text" id="welcomeStatus"></div>
+          </div>
+        </div>
+      `;
+      mountScreen(screen);
+
+      const input = screen.querySelector('#participantTextInput');
+      const btn = screen.querySelector('#startBtn');
+      const status = screen.querySelector('#welcomeStatus');
+
+      btn.addEventListener('click', async () => {
+        if (state.isTransitioning) return;
+        btn.disabled = true;
+        showStatus(status, 'Starting experiment...');
+
+        try {
+          state.participantEnteredText = input.value.trim();
+          await registerParticipant();
+          state.assignedTaskOrder = softRandomTaskOrder();
+          state.currentTotalPoints = 0;
+          state.currentTopFive = [];
+          state.submittedTrialKeys.clear();
+
+          await fadeOutAndReplace(screen, () => {
+            if (state.assignedTaskOrder === 'ST_First') {
+              showSTInstructionScreen1();
+            } else {
+              showMTInstructionScreen2();
+            }
+          });
+        } catch (err) {
+          btn.disabled = false;
+          showStatus(status, err.message || 'Could not start experiment.', true);
+        }
+      });
+    }
+
+    // ST-FIRST: Screen 2(1)
+    function showSTInstructionScreen1() {
+      state.currentScreenName = 'st_instruction_1';
+
+      const screen = createCenteredPanelScreen(`
+        <p>In this experiment you are going to choose between Option A and Option B. The score for this option is shown below. The percentage indicates the probability that you will receive this score if you select this option.</p>
+        <p>Click "Start Practice" to start a few practice trials to get familiar with this!</p>
+        <button class="btn" id="startPracticeBtn">Start Practice</button>
+      `);
+
+      mountScreen(screen);
+      screen.querySelector('#startPracticeBtn').addEventListener('click', async () => {
+        await fadeOutAndReplace(screen, () => {
+          runTaskBlock({
+            taskType: 'ST',
+            isPractice: true,
+            withDigitTask: false,
+            nextScreenBuilder: showSTMainScreen1
+          });
+        });
+      });
+    }
+
+    // ST-FIRST: Screen 4(1)
+    function showSTMainScreen1() {
+      state.currentScreenName = 'st_main_1';
+      runTaskBlock({
+        taskType: 'ST',
+        isPractice: false,
+        withDigitTask: false,
+        nextScreenBuilder: showTransitionToMTScreen1
+      });
+    }
+
+    // ST-FIRST: Screen 5(1)
+    function showTransitionToMTScreen1() {
+      state.currentScreenName = 'transition_to_mt_1';
+
+      const screen = createCenteredPanelScreen(`
+        <p>Congratulations! You’ve completed Part 1. Now you’ll move on to Part 2.</p>
+        <p>Click "Start Practice" to start a few practice trials to get familiar with this!</p>
+        <button class="btn" id="startPracticeBtn">Start Practice</button>
+      `);
+
+      mountScreen(screen);
+      screen.querySelector('#startPracticeBtn').addEventListener('click', async () => {
+        await fadeOutAndReplace(screen, () => {
+          runTaskBlock({
+            taskType: 'MT',
+            isPractice: true,
+            withDigitTask: true,
+            nextScreenBuilder: showMTMainScreen1
+          });
+        });
+      });
+    }
+
+    // ST-FIRST: Screen 7(1)
+    function showMTMainScreen1() {
+      state.currentScreenName = 'mt_main_1';
+      runTaskBlock({
+        taskType: 'MT',
+        isPractice: false,
+        withDigitTask: true,
+        nextScreenBuilder: showFinalScreen
+      });
+    }
+
+    // MT-FIRST: Screen 2(2)
+    function showMTInstructionScreen2() {
+      state.currentScreenName = 'mt_instruction_2';
+
+      const screen = createCenteredPanelScreen(`
+        <p>In this experiment you are going to choose between Option A and Option B. The score for this option will be shown below. The percentage indicates the probability that you will receive this score if you select this option.</p>
+        <p>At the same time, numbers 1 through 9 will appear randomly in the center of the screen. When you see the number 3, press the spacebar.</p>
+        <p>Click "Start Practice" to start a few practice trials to get familiar with this!</p>
+        <button class="btn" id="startPracticeBtn">Start Practice</button>
+      `);
+
+      mountScreen(screen);
+      screen.querySelector('#startPracticeBtn').addEventListener('click', async () => {
+        await fadeOutAndReplace(screen, () => {
+          runTaskBlock({
+            taskType: 'MT',
+            isPractice: true,
+            withDigitTask: true,
+            nextScreenBuilder: showMTMainScreen2
+          });
+        });
+      });
+    }
+
+    // MT-FIRST: Screen 4(2)
+    function showMTMainScreen2() {
+      state.currentScreenName = 'mt_main_2';
+      runTaskBlock({
+        taskType: 'MT',
+        isPractice: false,
+        withDigitTask: true,
+        nextScreenBuilder: showTransitionToSTScreen2
+      });
+    }
+
+    // MT-FIRST: Screen 5(2)
+    function showTransitionToSTScreen2() {
+      state.currentScreenName = 'transition_to_st_2';
+
+      const screen = createCenteredPanelScreen(`
+        <p>Congratulations! You’ve completed Part 1. Now you’ll move on to Part 2.</p>
+        <p>Click "Start Practice" to start a few practice trials to get familiar with this!</p>
+        <button class="btn" id="startPracticeBtn">Start Practice</button>
+      `);
+
+      mountScreen(screen);
+      screen.querySelector('#startPracticeBtn').addEventListener('click', async () => {
+        await fadeOutAndReplace(screen, () => {
+          runTaskBlock({
+            taskType: 'ST',
+            isPractice: true,
+            withDigitTask: false,
+            nextScreenBuilder: showSTMainScreen2
+          });
+        });
+      });
+    }
+
+    // MT-FIRST: Screen 7(2)
+    function showSTMainScreen2() {
+      state.currentScreenName = 'st_main_2';
+      runTaskBlock({
+        taskType: 'ST',
+        isPractice: false,
+        withDigitTask: false,
+        nextScreenBuilder: showFinalScreen
+      });
+    }
+
+    /************************************************************
+     * FINAL SCREEN
+     ************************************************************/
     function startFireworks(canvas) {
-      const ctx = canvas.getContext("2d");
+      stopFireworks();
+
+      const ctx = canvas.getContext('2d');
       const dpr = window.devicePixelRatio || 1;
 
-      const resize = () => {
-        canvas.width = Math.floor(window.innerWidth * dpr);
-        canvas.height = Math.floor(window.innerHeight * dpr);
-        canvas.style.width = window.innerWidth + "px";
-        canvas.style.height = window.innerHeight + "px";
+      function resize() {
+        canvas.width = Math.floor(canvas.clientWidth * dpr);
+        canvas.height = Math.floor(canvas.clientHeight * dpr);
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      };
-
+      }
       resize();
-      window.addEventListener("resize", resize);
 
-      fireworksData = { ctx, resize, particles: [] };
+      const particles = [];
 
       function spawnFirework() {
-        const cx = Math.random() * window.innerWidth;
-        const cy = 80 + Math.random() * (window.innerHeight * 0.55);
-        const count = 28 + Math.floor(Math.random() * 28);
+        const x = randomInt(80, window.innerWidth - 80);
+        const y = randomInt(60, Math.floor(window.innerHeight * 0.55));
+        const colors = ['#57B9FF', '#FFD700', '#FF0000', '#B3CEE5', '#000000'];
+        const burstCount = randomInt(22, 34);
 
-        for (let i = 0; i < count; i++) {
-          const angle = (Math.PI * 2 * i) / count;
-          const speed = 1.5 + Math.random() * 4.2;
-          fireworksData.particles.push({
-            x: cx,
-            y: cy,
+        for (let i = 0; i < burstCount; i++) {
+          const angle = (Math.PI * 2 * i) / burstCount + Math.random() * 0.25;
+          const speed = Math.random() * 3 + 1.5;
+          particles.push({
+            x,
+            y,
             vx: Math.cos(angle) * speed,
             vy: Math.sin(angle) * speed,
-            life: 60 + Math.random() * 28,
-            age: 0,
-            size: 2 + Math.random() * 2.5,
-            color: `hsl(${Math.random() * 360}, 100%, 55%)`
+            life: 55 + Math.random() * 28,
+            size: Math.random() * 3 + 1.5,
+            color: colors[randomInt(0, colors.length - 1)]
           });
         }
       }
 
-      function animate() {
-        ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+      let lastSpawn = 0;
 
-        if (Math.random() < 0.08) spawnFirework();
+      function animate(ts) {
+        ctx.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight);
 
-        fireworksData.particles.forEach(p => {
-          p.age += 1;
+        if (!lastSpawn || ts - lastSpawn > 420) {
+          spawnFirework();
+          lastSpawn = ts;
+        }
+
+        for (let i = particles.length - 1; i >= 0; i--) {
+          const p = particles[i];
           p.x += p.vx;
           p.y += p.vy;
-          p.vy += 0.02;
-        });
+          p.vy += 0.03;
+          p.life -= 1;
 
-        fireworksData.particles = fireworksData.particles.filter(p => p.age < p.life);
-
-        fireworksData.particles.forEach(p => {
-          const alpha = 1 - p.age / p.life;
-          ctx.globalAlpha = alpha;
+          ctx.globalAlpha = Math.max(p.life / 80, 0);
           ctx.beginPath();
           ctx.fillStyle = p.color;
           ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
           ctx.fill();
-        });
 
+          if (p.life <= 0) particles.splice(i, 1);
+        }
         ctx.globalAlpha = 1;
-        fireworksAnimationId = requestAnimationFrame(animate);
+
+        state.fireworksAnimFrame = requestAnimationFrame(animate);
       }
 
-      animate();
+      window.addEventListener('resize', resize);
+      state.fireworksAnimFrame = requestAnimationFrame(animate);
     }
 
     function stopFireworks() {
-      if (fireworksAnimationId) {
-        cancelAnimationFrame(fireworksAnimationId);
-        fireworksAnimationId = null;
+      if (state.fireworksAnimFrame) {
+        cancelAnimationFrame(state.fireworksAnimFrame);
+        state.fireworksAnimFrame = null;
       }
-      if (fireworksData && fireworksData.resize) {
-        window.removeEventListener("resize", fireworksData.resize);
-      }
-      fireworksData = null;
     }
 
-    function init() {
-      localStorage.removeItem(STORAGE_KEY);
-      renderWelcomeScreen();
+    function findRank(leaderboard, participantId) {
+      const idx = leaderboard.findIndex(item => String(item.Participant_ID) === String(participantId));
+      return idx >= 0 ? idx + 1 : null;
     }
 
-    init();
+    function renderFinalLeaderboard(panel, leaderboard) {
+      const rank = findRank(leaderboard, state.assignedParticipantId);
+      const finalHeader = panel.querySelector('.final-header');
+      const list = panel.querySelector('.leaderboard-list');
+
+      finalHeader.innerHTML = `
+        <h2>Your final result</h2>
+        <p>Final Rank: ${rank ? rank : 'N/A'} &nbsp;&nbsp;|&nbsp;&nbsp; Final Total Score: ${state.currentTotalPoints}</p>
+      `;
+
+      list.innerHTML = '';
+
+      leaderboard.forEach((item, index) => {
+        const row = document.createElement('div');
+        const isTop3 = index < 3;
+        const isCurrent = String(item.Participant_ID) === String(state.assignedParticipantId);
+
+        row.className = 'leaderboard-item'
+          + (isTop3 ? ' top3' : '')
+          + (isCurrent ? ' current-user' : '');
+
+        row.innerHTML = `
+          <div class="leaderboard-rank">${index + 1}</div>
+          <div class="leaderboard-id">${escapeHtml(item.Participant_ID)}</div>
+          <div class="leaderboard-points">${Number(item.Total_Points) || 0}</div>
+        `;
+        list.appendChild(row);
+      });
+    }
+
+    async function showFinalScreen() {
+      state.currentScreenName = 'final_screen';
+      clearApp();
+
+      const screen = createScreen();
+      screen.innerHTML = `
+        <canvas id="fireworksCanvas"></canvas>
+        <div class="final-wrap">
+          <div class="final-panel">
+            <div class="final-header">
+              <h2>Your final result</h2>
+              <p>Loading final ranking...</p>
+            </div>
+
+            <div class="leaderboard-title">Leaderboard</div>
+            <div class="leaderboard-list">
+              <div class="loading-text">Loading completed participants...</div>
+            </div>
+
+            <div class="final-thanks">
+              Congratulations on completing all the sections! Thank you for participating!
+            </div>
+          </div>
+        </div>
+      `;
+      mountScreen(screen);
+
+      const canvas = screen.querySelector('#fireworksCanvas');
+      startFireworks(canvas);
+
+      const panel = screen.querySelector('.final-panel');
+
+      try {
+        // Give backend a moment in case the 40th trial just triggered final summary/ranking.
+        await sleep(700);
+        const leaderboard = await buildFullLeaderboardFromRawData();
+        renderFinalLeaderboard(panel, leaderboard);
+      } catch (err) {
+        panel.querySelector('.leaderboard-list').innerHTML = `
+          <div class="loading-text error-text">Could not load final leaderboard: ${escapeHtml(err.message)}</div>
+        `;
+        panel.querySelector('.final-header').innerHTML = `
+          <h2>Your final result</h2>
+          <p>Final Total Score: ${state.currentTotalPoints}</p>
+        `;
+      }
+    }
+
+    /************************************************************
+     * START
+     ************************************************************/
+    showWelcomeScreen();
   </script>
 </body>
 </html>
