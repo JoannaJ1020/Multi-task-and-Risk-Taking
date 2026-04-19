@@ -604,6 +604,12 @@
       return Array.isArray(data.raw_data) ? data.raw_data : [];
     }
 
+    async function fetchAllRankingRows() {
+      const data = await getJSON({ action: 'get_ranking', all: '1' });
+      if (!data.success) throw new Error(data.error || 'Failed to fetch ranking.');
+      return Array.isArray(data.ranking) ? data.ranking : [];
+    }
+
     async function rebuildLeaderboardFromRawData() {
       const rows = await fetchAllRawData();
 
