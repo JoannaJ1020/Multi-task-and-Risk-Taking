@@ -492,10 +492,6 @@
       return Math.floor(Math.random() * (max - min + 1)) + min;
     }
 
-    function randomOneDecimal(min, max) {
-      return Math.round((Math.random() * (max - min) + min) * 10) / 10;
-    }
-
     function sleep(ms) {
       return new Promise(resolve => setTimeout(resolve, ms));
     }
@@ -904,7 +900,7 @@
         state.penaltyThisTrial = 0;
 
         const xValue = allowDecimalX
-          ? randomOneDecimal(CONFIG.optionB.minX, CONFIG.optionB.maxX)
+          ? randomInt(CONFIG.optionB.minX, CONFIG.optionB.maxX)
           : randomInt(CONFIG.optionB.minX, CONFIG.optionB.maxX);
 
         const xDisplay = allowDecimalX ? xValue.toFixed(1) : xValue;
