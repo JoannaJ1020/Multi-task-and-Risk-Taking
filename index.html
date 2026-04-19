@@ -62,7 +62,7 @@
 
     .panel {
       width: 100%;
-      max-width: 840px;
+      max-width: 860px;
       background: var(--light-blue);
       border-radius: 24px;
       box-shadow: var(--shadow);
@@ -83,7 +83,7 @@
       font-size: clamp(18px, 2vw, 22px);
     }
 
-    .panel .bold-line {
+    .bold-line {
       font-weight: 800;
     }
 
@@ -465,7 +465,8 @@
       formalDigitIntervalMs: 2000,
       feedbackDisplayMs: 360,
       fadeBetweenTrialsMs: 180,
-      leaderboardRefreshMs: 2500
+      leaderboardRefreshMs: 2500,
+      multitaskPenalty: 5
     };
 
     const state = {
@@ -481,6 +482,7 @@
       currentDigit: null,
       digitThreeHandled: false,
       digitCircleEl: null,
+      penaltyThisTrial: 0,
 
       leaderboardPollTimer: null,
       latestRebuiltLeaderboard: [],
@@ -666,14 +668,8 @@
 
       if (state.assignedParticipantId) {
         const idx = list.findIndex(x => x.Participant_ID === state.assignedParticipantId);
-        if (idx >= 0) {
-          list[idx].Total_Points = state.currentTotalPoints;
-        } else {
-          list.push({
-            Participant_ID: state.assignedParticipantId,
-            Total_Points: state.currentTotalPoints
-          });
-        }
+        if (idx >= 0) list[idx].Total_Points = state.currentTotalPoints;
+        else list.push({ Participant_ID: state.assignedParticipantId, Total_Points: state.currentTotalPoints });
       }
 
       list.sort((a, b) => b.Total_Points - a.Total_Points);
@@ -689,11 +685,11 @@
       topFive.forEach(item => {
         const pill = document.createElement('div');
         pill.className = 'score-pill' + (item.Participant_ID === state.assignedParticipantId ? ' current' : '');
-        pill.textContent = `${item.Total_Points}`;
+        pill.textContent = `${Number.isInteger(item.Total_Points) ? item.Total_Points : item.Total_Points.toFixed(1)}`;
         rowEl.appendChild(pill);
       });
 
-      totalEl.textContent = String(state.currentTotalPoints);
+      totalEl.textContent = `${Number.isInteger(state.currentTotalPoints) ? state.currentTotalPoints : state.currentTotalPoints.toFixed(1)}`;
     }
 
     async function refreshTopFive(rankingPanel) {
@@ -737,25 +733,28 @@
       state.digitCircleEl.classList.add('shake');
     }
 
-    function onDigitTick() {
-      if (state.currentDigit === 3 && !state.digitThreeHandled) {
-        shakeDigitCircle();
-      }
-
-      state.currentDigit = randomInt(0, 9);
-      state.digitThreeHandled = false;
-
-      if (state.digitCircleEl) {
-        state.digitCircleEl.textContent = String(state.currentDigit);
+    function registerDigitFailure(applyPenalty) {
+      shakeDigitCircle();
+      if (applyPenalty) {
+        state.penaltyThisTrial += CONFIG.multitaskPenalty;
       }
     }
 
-    function startDigitTask(circleEl, intervalMs) {
-      stopDigitTask();
-      attachDigitCircle(circleEl);
-
+    function onDigitTick(applyPenalty) {
+      if (state.currentDigit === 3 && !state.digitThreeHandled) {
+        registerDigitFailure(applyPenalty);
+      }
       state.currentDigit = randomInt(0, 9);
       state.digitThreeHandled = false;
+      if (state.digitCircleEl) state.digitCircleEl.textContent = String(state.currentDigit);
+    }
+
+    function startDigitTask(circleEl, intervalMs, applyPenalty) {
+      stopDigitTask();
+      attachDigitCircle(circleEl);
+      state.currentDigit = randomInt(0, 9);
+      state.digitThreeHandled = false;
+      state.penaltyThisTrial = 0;
       circleEl.textContent = String(state.currentDigit);
 
       state.digitKeyListener = function(event) {
@@ -765,12 +764,12 @@
         if (state.currentDigit === 3) {
           state.digitThreeHandled = true;
         } else {
-          shakeDigitCircle();
+          registerDigitFailure(applyPenalty);
         }
       };
 
       window.addEventListener('keydown', state.digitKeyListener);
-      state.digitTimer = setInterval(onDigitTick, intervalMs);
+      state.digitTimer = setInterval(() => onDigitTick(applyPenalty), intervalMs);
     }
 
     function stopDigitTask() {
@@ -785,6 +784,7 @@
       state.currentDigit = null;
       state.digitThreeHandled = false;
       state.digitCircleEl = null;
+      state.penaltyThisTrial = 0;
     }
 
     function createRankingPanel() {
@@ -851,7 +851,8 @@
       showRanking,
       nextScreenBuilder,
       digitIntervalMs,
-      allowDecimalX = false
+      allowDecimalX = false,
+      applyPenalty = false
     }) {
       clearApp();
 
@@ -912,6 +913,7 @@
         }
 
         trialIndexWithinTask += 1;
+        state.penaltyThisTrial = 0;
 
         const xValue = allowDecimalX
           ? randomOneDecimal(CONFIG.optionB.minX, CONFIG.optionB.maxX)
@@ -924,11 +926,11 @@
         if (withDigitTask) {
           const digitCircle = stage.querySelector('.digit-circle');
           if (trialIndexWithinTask === 1) {
-            startDigitTask(digitCircle, digitIntervalMs);
+            startDigitTask(digitCircle, digitIntervalMs, applyPenalty);
           } else {
             attachDigitCircle(digitCircle);
             if (state.currentDigit === null) {
-              startDigitTask(digitCircle, digitIntervalMs);
+              startDigitTask(digitCircle, digitIntervalMs, applyPenalty);
             } else {
               digitCircle.textContent = String(state.currentDigit);
             }
@@ -947,14 +949,16 @@
           left.classList.add('disabled');
           right.classList.add('disabled');
 
-          const awarded = awardPoints(choice, xValue);
+          const baseAward = awardPoints(choice, xValue);
+          const finalAward = baseAward - state.penaltyThisTrial;
           const choseA = choice === 'A' ? 1 : 0;
           const chosenFb = choice === 'A' ? leftFb : rightFb;
-          chosenFb.textContent = `+${Number.isInteger(awarded) ? awarded : awarded.toFixed(1)}`;
+          const displayText = (finalAward >= 0 ? '+' : '') + (Number.isInteger(finalAward) ? finalAward : finalAward.toFixed(1));
+          chosenFb.textContent = displayText;
           chosenFb.classList.add('visible');
 
           if (!isPractice) {
-            state.currentTotalPoints += awarded;
+            state.currentTotalPoints += finalAward;
             if (showRanking && rankingPanel) {
               renderTopFive(rankingPanel, state.latestFastRanking.length ? state.latestFastRanking : state.latestRebuiltLeaderboard);
             }
@@ -964,7 +968,7 @@
               trialIndex: trialIndexWithinTask,
               choseA,
               xValue,
-              pointsAwarded: awarded
+              pointsAwarded: finalAward
             }).then(async () => {
               if (showRanking && rankingPanel) await refreshTopFive(rankingPanel);
             }).catch(err => {
@@ -977,6 +981,7 @@
           await sleep(CONFIG.fadeBetweenTrialsMs);
           stage.remove();
           choiceLocked = false;
+          state.penaltyThisTrial = 0;
           presentTrial();
         }
 
@@ -1029,19 +1034,12 @@
           state.currentTotalPoints = 0;
           state.submittedTrialKeys.clear();
 
-          try {
-            state.latestFastRanking = await fetchAllRankingFast();
-          } catch {}
-          try {
-            state.latestRebuiltLeaderboard = await rebuildLeaderboardFromRawData();
-          } catch {}
+          try { state.latestFastRanking = await fetchAllRankingFast(); } catch {}
+          try { state.latestRebuiltLeaderboard = await rebuildLeaderboardFromRawData(); } catch {}
 
           await fadeOutAndReplace(screen, () => {
-            if (state.assignedTaskOrder === 'ST_First') {
-              showSTInstructionScreen2_1();
-            } else {
-              showMTInstructionScreen2_2();
-            }
+            if (state.assignedTaskOrder === 'ST_First') showSTInstructionScreen2_1();
+            else showMTInstructionScreen2_2();
           });
         } catch (err) {
           btn.disabled = false;
@@ -1053,22 +1051,20 @@
 
     function showSTInstructionScreen2_1() {
       const screen = createCenteredPanelScreen(`
-        <p class="bold-line">In this experiment you are going to choose between Option A and Option B. The score for this option is shown below. The percentage indicates the probability that you will receive this score if you select this option.</p>
+        <p>In this experiment you are going to choose between Option A and Option B. The score for this option is shown below. The percentage indicates the probability that you will receive this score if you select this option.</p>
         <p>Click "Start Practice" to start a few practice trials to get familiar with this!</p>
         <button class="btn" id="startPracticeBtn">Start Practice</button>
       `);
       mountScreen(screen);
       screen.querySelector('#startPracticeBtn').addEventListener('click', async () => {
-        await fadeOutAndReplace(screen, () => {
-          runTaskBlock({
-            taskType: 'ST',
-            isPractice: true,
-            withDigitTask: false,
-            showRanking: false,
-            nextScreenBuilder: showSTMainScreen4_1,
-            digitIntervalMs: null
-          });
-        });
+        await fadeOutAndReplace(screen, () => runTaskBlock({
+          taskType: 'ST',
+          isPractice: true,
+          withDigitTask: false,
+          showRanking: false,
+          nextScreenBuilder: showSTMainScreen4_1,
+          digitIntervalMs: null
+        }));
       });
     }
 
@@ -1085,11 +1081,7 @@
 
     function showTransitionScreen5_1() {
       const screen = createScreen();
-      screen.innerHTML = `
-        <div class="click-anywhere-message show">
-          <div>Congratulations! You’ve completed Part 1. Now click anythere too move on to Part 2.</div>
-        </div>
-      `;
+      screen.innerHTML = `<div class="click-anywhere-message show"><div>Congratulations! You’ve completed Part 1. Now click anythere too move on to Part 2.</div></div>`;
       mountScreen(screen);
       screen.querySelector('.click-anywhere-message').addEventListener('click', async () => {
         await fadeOutAndReplace(screen, showMTInstructionScreen6_1);
@@ -1098,23 +1090,22 @@
 
     function showMTInstructionScreen6_1() {
       const screen = createCenteredPanelScreen(`
-        <p class="bold-line">In this experiment you are going to choose between Option A and Option B. The score for this option will be shown below. The percentage indicates the probability that you will receive this score if you select this option.</p>
-        <p class="bold-line">At the same time, numbers 1 through 9 will appear randomly in the center of the screen. When you see the number 3, press the spacebar.</p>
+        <p>In this experiment you are going to choose between Option A and Option B. The score for this option will be shown below. The percentage indicates the probability that you will receive this score if you select this option.</p>
+        <p>At the same time, numbers 1 through 9 will appear randomly in the center of the screen. When you see the number 3, press the space bar. If you press the space bar on the wrong number or skip the 3, you will lose 5 points.</p>
         <p>Click "Start Practice" to start a few practice trials to get familiar with this!</p>
         <button class="btn" id="startPracticeBtn">Start Practice</button>
       `);
       mountScreen(screen);
       screen.querySelector('#startPracticeBtn').addEventListener('click', async () => {
-        await fadeOutAndReplace(screen, () => {
-          runTaskBlock({
-            taskType: 'MT',
-            isPractice: true,
-            withDigitTask: true,
-            showRanking: true,
-            nextScreenBuilder: showMTMainScreen8_1,
-            digitIntervalMs: CONFIG.practiceDigitIntervalMs
-          });
-        });
+        await fadeOutAndReplace(screen, () => runTaskBlock({
+          taskType: 'MT',
+          isPractice: true,
+          withDigitTask: true,
+          showRanking: true,
+          nextScreenBuilder: showMTMainScreen8_1,
+          digitIntervalMs: CONFIG.practiceDigitIntervalMs,
+          applyPenalty: false
+        }));
       });
     }
 
@@ -1125,29 +1116,29 @@
         withDigitTask: true,
         showRanking: true,
         nextScreenBuilder: showFinalScreen9,
-        digitIntervalMs: CONFIG.formalDigitIntervalMs
+        digitIntervalMs: CONFIG.formalDigitIntervalMs,
+        applyPenalty: true
       });
     }
 
     function showMTInstructionScreen2_2() {
       const screen = createCenteredPanelScreen(`
-        <p class="bold-line">In this experiment you are going to choose between Option A and Option B. The score for this option will be shown below. The percentage indicates the probability that you will receive this score if you select this option.</p>
-        <p class="bold-line">At the same time, numbers 1 through 9 will appear randomly in the center of the screen. When you see the number 3, press the spacebar.</p>
-        <p class="bold-line">Click "Start Practice" to start a few practice trials to get familiar with this!</p>
+        <p>In this experiment you are going to choose between Option A and Option B. The score for this option will be shown below. The percentage indicates the probability that you will receive this score if you select this option.</p>
+        <p>At the same time, numbers 1 through 9 will appear randomly in the center of the screen. When you see the number 3, press the space bar. If you press the space bar on the wrong number or skip the 3, you will lose 5 points.</p>
+        <p>Click "Start Practice" to start a few practice trials to get familiar with this!</p>
         <button class="btn" id="startPracticeBtn">Start Practice</button>
       `);
       mountScreen(screen);
       screen.querySelector('#startPracticeBtn').addEventListener('click', async () => {
-        await fadeOutAndReplace(screen, () => {
-          runTaskBlock({
-            taskType: 'MT',
-            isPractice: true,
-            withDigitTask: true,
-            showRanking: false,
-            nextScreenBuilder: showMTMainScreen4_2,
-            digitIntervalMs: CONFIG.practiceDigitIntervalMs
-          });
-        });
+        await fadeOutAndReplace(screen, () => runTaskBlock({
+          taskType: 'MT',
+          isPractice: true,
+          withDigitTask: true,
+          showRanking: false,
+          nextScreenBuilder: showMTMainScreen4_2,
+          digitIntervalMs: CONFIG.practiceDigitIntervalMs,
+          applyPenalty: false
+        }));
       });
     }
 
@@ -1158,17 +1149,14 @@
         withDigitTask: true,
         showRanking: true,
         nextScreenBuilder: showTransitionScreen5_2,
-        digitIntervalMs: CONFIG.formalDigitIntervalMs
+        digitIntervalMs: CONFIG.formalDigitIntervalMs,
+        applyPenalty: true
       });
     }
 
     function showTransitionScreen5_2() {
       const screen = createScreen();
-      screen.innerHTML = `
-        <div class="click-anywhere-message show">
-          <div>Congratulations! You’ve completed Part 1. Now click anythere too move on to Part 2.</div>
-        </div>
-      `;
+      screen.innerHTML = `<div class="click-anywhere-message show"><div>Congratulations! You’ve completed Part 1. Now click anywhere to move on to Part 2.</div></div>`;
       mountScreen(screen);
       screen.querySelector('.click-anywhere-message').addEventListener('click', async () => {
         await fadeOutAndReplace(screen, showSTInstructionScreen6_2);
@@ -1177,23 +1165,21 @@
 
     function showSTInstructionScreen6_2() {
       const screen = createCenteredPanelScreen(`
-        <p class="bold-line">In this experiment you are going to choose between Option A and Option B. The score for this option is shown below. The percentage indicates the probability that you will receive this score if you select this option.</p>
+        <p>In this experiment you are going to choose between Option A and Option B. The score for this option is shown below. The percentage indicates the probability that you will receive this score if you select this option.</p>
         <p>Click "Start Practice" to start a few practice trials to get familiar with this!</p>
         <button class="btn" id="startPracticeBtn">Start Practice</button>
       `);
       mountScreen(screen);
       screen.querySelector('#startPracticeBtn').addEventListener('click', async () => {
-        await fadeOutAndReplace(screen, () => {
-          runTaskBlock({
-            taskType: 'ST',
-            isPractice: true,
-            withDigitTask: false,
-            showRanking: false,
-            nextScreenBuilder: showSTMainScreen8_2,
-            digitIntervalMs: null,
-            allowDecimalX: true
-          });
-        });
+        await fadeOutAndReplace(screen, () => runTaskBlock({
+          taskType: 'ST',
+          isPractice: true,
+          withDigitTask: false,
+          showRanking: false,
+          nextScreenBuilder: showSTMainScreen8_2,
+          digitIntervalMs: null,
+          allowDecimalX: true
+        }));
       });
     }
 
@@ -1221,7 +1207,6 @@
       resize();
 
       const particles = [];
-
       function spawnFirework() {
         const x = randomInt(80, window.innerWidth - 80);
         const y = randomInt(60, Math.floor(window.innerHeight * 0.55));
@@ -1293,7 +1278,7 @@
 
       header.innerHTML = `
         <h2>Leaderboard</h2>
-        <p>Current Rank: ${rank || 'N/A'} &nbsp;&nbsp;|&nbsp;&nbsp; Final Total Score: ${Math.round(state.currentTotalPoints * 10) / 10}</p>
+        <p>Current Rank: ${rank || 'N/A'} &nbsp;&nbsp;|&nbsp;&nbsp; Final Total Score: ${Number.isInteger(state.currentTotalPoints) ? state.currentTotalPoints : state.currentTotalPoints.toFixed(1)}</p>
       `;
 
       list.innerHTML = '';
@@ -1309,7 +1294,7 @@
         row.innerHTML = `
           <div class="leaderboard-rank">${idx + 1}</div>
           <div class="leaderboard-id">${escapeHtml(item.Participant_ID)}</div>
-          <div class="leaderboard-points">${Number(item.Total_Points) || 0}</div>
+          <div class="leaderboard-points">${Number.isInteger(item.Total_Points) ? item.Total_Points : item.Total_Points.toFixed(1)}</div>
         `;
         list.appendChild(row);
       });
@@ -1327,9 +1312,7 @@
               <h2>Leaderboard</h2>
               <p>Loading leaderboard...</p>
             </div>
-
             <div class="leaderboard-list" id="leaderboardList"></div>
-
             <div class="final-thanks">
               Congratulations on completing all the sections! Thank you for participating!
             </div>
@@ -1341,8 +1324,16 @@
 
       const panel = screen.querySelector('.final-panel');
 
-      const immediate = mergeCurrentIntoTopFive(state.latestFastRanking.length ? state.latestFastRanking : state.latestRebuiltLeaderboard);
-      if (immediate.length) {
+      const immediateBase = state.latestFastRanking.length ? state.latestFastRanking : state.latestRebuiltLeaderboard;
+      if (immediateBase.length) {
+        let immediate = immediateBase.map(x => ({
+          Participant_ID: String(x.Participant_ID),
+          Total_Points: Number(x.Total_Points) || 0
+        }));
+        const idx = immediate.findIndex(x => x.Participant_ID === state.assignedParticipantId);
+        if (idx >= 0) immediate[idx].Total_Points = state.currentTotalPoints;
+        else immediate.push({ Participant_ID: state.assignedParticipantId, Total_Points: state.currentTotalPoints });
+        immediate.sort((a, b) => b.Total_Points - a.Total_Points);
         renderFinalLeaderboard(panel, immediate);
       }
 
@@ -1363,9 +1354,11 @@
       } catch (err) {
         try {
           const rebuilt = await rebuildLeaderboardFromRawData();
-          renderFinalLeaderboard(panel, rebuilt.length ? rebuilt : immediate);
+          renderFinalLeaderboard(panel, rebuilt.length ? rebuilt : immediateBase);
         } catch {
-          renderFinalLeaderboard(panel, immediate);
+          if (!immediateBase.length) {
+            renderFinalLeaderboard(panel, [{ Participant_ID: state.assignedParticipantId, Total_Points: state.currentTotalPoints }]);
+          }
         }
       }
     }
