@@ -396,13 +396,6 @@
       font-weight: 700;
     }
 
-    .leaderboard-title {
-      text-align: center;
-      font-size: 28px;
-      font-weight: 800;
-      margin: 18px 0 16px;
-    }
-
     .leaderboard-list {
       display: flex;
       flex-direction: column;
@@ -461,8 +454,7 @@
       formalTrialsPerTask: 20,
       optionA: { points: 10, successProb: 0.8 },
       optionB: { minX: 1, maxX: 60, successProb: 0.2 },
-      practiceDigitIntervalMs: 2000,
-      formalDigitIntervalMs: 2000,
+      mtDigitIntervalMs: 1500,
       feedbackDisplayMs: 360,
       fadeBetweenTrialsMs: 180,
       leaderboardRefreshMs: 2500,
@@ -579,9 +571,7 @@
 
     async function registerParticipant() {
       const data = await postJSON({ action: 'register_participant' });
-      if (!data.success || !data.Participant_ID) {
-        throw new Error(data.error || 'Failed to register participant.');
-      }
+      if (!data.success || !data.Participant_ID) throw new Error(data.error || 'Failed to register participant.');
       state.assignedParticipantId = String(data.Participant_ID);
       return state.assignedParticipantId;
     }
@@ -633,11 +623,7 @@
         if (!pid || !task || !trialIndex) continue;
 
         if (!participantMap.has(pid)) {
-          participantMap.set(pid, {
-            Participant_ID: pid,
-            ST: new Map(),
-            MT: new Map()
-          });
+          participantMap.set(pid, { Participant_ID: pid, ST: new Map(), MT: new Map() });
         }
 
         const p = participantMap.get(pid);
@@ -697,7 +683,7 @@
         const fast = await fetchAllRankingFast();
         state.latestFastRanking = fast;
         renderTopFive(rankingPanel, fast);
-      } catch (err) {
+      } catch {
         try {
           const rebuilt = await rebuildLeaderboardFromRawData();
           renderTopFive(rankingPanel, rebuilt);
@@ -710,9 +696,7 @@
     function startLeaderboardPolling(rankingPanel) {
       stopLeaderboardPolling();
       refreshTopFive(rankingPanel);
-      state.leaderboardPollTimer = setInterval(() => {
-        refreshTopFive(rankingPanel);
-      }, CONFIG.leaderboardRefreshMs);
+      state.leaderboardPollTimer = setInterval(() => refreshTopFive(rankingPanel), CONFIG.leaderboardRefreshMs);
     }
 
     function stopLeaderboardPolling() {
@@ -735,9 +719,7 @@
 
     function registerDigitFailure(applyPenalty) {
       shakeDigitCircle();
-      if (applyPenalty) {
-        state.penaltyThisTrial += CONFIG.multitaskPenalty;
-      }
+      if (applyPenalty) state.penaltyThisTrial += CONFIG.multitaskPenalty;
     }
 
     function onDigitTick(applyPenalty) {
@@ -749,7 +731,7 @@
       if (state.digitCircleEl) state.digitCircleEl.textContent = String(state.currentDigit);
     }
 
-    function startDigitTask(circleEl, intervalMs, applyPenalty) {
+    function startDigitTask(circleEl, applyPenalty) {
       stopDigitTask();
       attachDigitCircle(circleEl);
       state.currentDigit = randomInt(0, 9);
@@ -761,15 +743,12 @@
         if (event.code !== 'Space') return;
         event.preventDefault();
 
-        if (state.currentDigit === 3) {
-          state.digitThreeHandled = true;
-        } else {
-          registerDigitFailure(applyPenalty);
-        }
+        if (state.currentDigit === 3) state.digitThreeHandled = true;
+        else registerDigitFailure(applyPenalty);
       };
 
       window.addEventListener('keydown', state.digitKeyListener);
-      state.digitTimer = setInterval(() => onDigitTick(applyPenalty), intervalMs);
+      state.digitTimer = setInterval(() => onDigitTick(applyPenalty), CONFIG.mtDigitIntervalMs);
     }
 
     function stopDigitTask() {
@@ -850,7 +829,6 @@
       withDigitTask,
       showRanking,
       nextScreenBuilder,
-      digitIntervalMs,
       allowDecimalX = false,
       applyPenalty = false
     }) {
@@ -926,14 +904,11 @@
         if (withDigitTask) {
           const digitCircle = stage.querySelector('.digit-circle');
           if (trialIndexWithinTask === 1) {
-            startDigitTask(digitCircle, digitIntervalMs, applyPenalty);
+            startDigitTask(digitCircle, applyPenalty);
           } else {
             attachDigitCircle(digitCircle);
-            if (state.currentDigit === null) {
-              startDigitTask(digitCircle, digitIntervalMs, applyPenalty);
-            } else {
-              digitCircle.textContent = String(state.currentDigit);
-            }
+            if (state.currentDigit === null) startDigitTask(digitCircle, applyPenalty);
+            else digitCircle.textContent = String(state.currentDigit);
           }
         }
 
@@ -1062,8 +1037,7 @@
           isPractice: true,
           withDigitTask: false,
           showRanking: false,
-          nextScreenBuilder: showSTMainScreen4_1,
-          digitIntervalMs: null
+          nextScreenBuilder: showSTMainScreen4_1
         }));
       });
     }
@@ -1074,8 +1048,7 @@
         isPractice: false,
         withDigitTask: false,
         showRanking: true,
-        nextScreenBuilder: showTransitionScreen5_1,
-        digitIntervalMs: null
+        nextScreenBuilder: showTransitionScreen5_1
       });
     }
 
@@ -1103,7 +1076,6 @@
           withDigitTask: true,
           showRanking: true,
           nextScreenBuilder: showMTMainScreen8_1,
-          digitIntervalMs: CONFIG.practiceDigitIntervalMs,
           applyPenalty: false
         }));
       });
@@ -1116,7 +1088,6 @@
         withDigitTask: true,
         showRanking: true,
         nextScreenBuilder: showFinalScreen9,
-        digitIntervalMs: CONFIG.formalDigitIntervalMs,
         applyPenalty: true
       });
     }
@@ -1136,7 +1107,6 @@
           withDigitTask: true,
           showRanking: false,
           nextScreenBuilder: showMTMainScreen4_2,
-          digitIntervalMs: CONFIG.practiceDigitIntervalMs,
           applyPenalty: false
         }));
       });
@@ -1149,7 +1119,6 @@
         withDigitTask: true,
         showRanking: true,
         nextScreenBuilder: showTransitionScreen5_2,
-        digitIntervalMs: CONFIG.formalDigitIntervalMs,
         applyPenalty: true
       });
     }
@@ -1177,7 +1146,6 @@
           withDigitTask: false,
           showRanking: false,
           nextScreenBuilder: showSTMainScreen8_2,
-          digitIntervalMs: null,
           allowDecimalX: true
         }));
       });
@@ -1189,8 +1157,7 @@
         isPractice: false,
         withDigitTask: false,
         showRanking: true,
-        nextScreenBuilder: showFinalScreen9,
-        digitIntervalMs: null
+        nextScreenBuilder: showFinalScreen9
       });
     }
 
@@ -1351,7 +1318,7 @@
 
         leaderboard.sort((a, b) => b.Total_Points - a.Total_Points);
         renderFinalLeaderboard(panel, leaderboard);
-      } catch (err) {
+      } catch {
         try {
           const rebuilt = await rebuildLeaderboardFromRawData();
           renderFinalLeaderboard(panel, rebuilt.length ? rebuilt : immediateBase);
