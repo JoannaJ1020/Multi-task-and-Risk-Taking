@@ -899,11 +899,8 @@
         trialIndexWithinTask += 1;
         state.penaltyThisTrial = 0;
 
-        const xValue = allowDecimalX
-          ? randomInt(CONFIG.optionB.minX, CONFIG.optionB.maxX)
-          : randomInt(CONFIG.optionB.minX, CONFIG.optionB.maxX);
-
-        const xDisplay = allowDecimalX ? xValue.toFixed(1) : xValue;
+        const xValue = randomInt(CONFIG.optionB.minX, CONFIG.optionB.maxX);
+        const xDisplay = xValue;
         const stage = createChoiceStage(xDisplay, withDigitTask);
         mainRegion.appendChild(stage);
 
