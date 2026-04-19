@@ -71,7 +71,7 @@
       line-height: 1.65;
     }
 
-    .panel h1, .panel p {
+    .panel h1, .panel p , .panel p2{
       margin: 0 0 16px 0;
     }
 
@@ -82,12 +82,12 @@
     .panel p {
       font-size: clamp(18px, 2vw, 22px);
     }
-
-    .bold-line {
+    .panel p2 {
+      font-size: clamp(18px, 2vw, 22px);
       font-weight: 800;
     }
-    .bold-line2 {
-      font-weight:700;
+    .bold-line {
+      font-weight: 800;
     }
     
     .text-input {
@@ -1029,7 +1029,7 @@
 
     function showSTInstructionScreen2_1() {
       const screen = createCenteredPanelScreen(`
-        <p>In this experiment you are going to choose between Option A and Option B. The score for this option is shown below. The percentage indicates the probability that you will receive this score if you select this option.</p>
+        <p2>In this experiment you are going to choose between Option A and Option B. The score for this option is shown below. The percentage indicates the probability that you will receive this score if you select this option.</p2>
         <p>Click "Start Practice" to start a few practice trials to get familiar with this!</p>
         <button class="btn" id="startPracticeBtn">Start Practice</button>
       `);
@@ -1066,8 +1066,8 @@
 
     function showMTInstructionScreen6_1() {
       const screen = createCenteredPanelScreen(`
-        <p>In this experiment you are going to choose between Option A and Option B. The score for this option will be shown below. The percentage indicates the probability that you will receive this score if you select this option.</p>
-        <p>At the same time, numbers 1 through 9 will appear randomly in the center of the screen. When you see the number 3, press the space bar. If you press the space bar on the wrong number or skip the 3, you will lose 5 points.</p>
+        <p2>In this experiment you are going to choose between Option A and Option B. The score for this option will be shown below. The percentage indicates the probability that you will receive this score if you select this option.</p2>
+        <p2>At the same time, numbers 1 through 9 will appear randomly in the center of the screen. When you see the number 3, press the space bar. If you press the space bar on the wrong number or skip the 3, you will lose 5 points.</p2>
         <p>Click "Start Practice" to start a few practice trials to get familiar with this!</p>
         <button class="btn" id="startPracticeBtn">Start Practice</button>
       `);
@@ -1097,8 +1097,8 @@
 
     function showMTInstructionScreen2_2() {
       const screen = createCenteredPanelScreen(`
-        <p>In this experiment you are going to choose between Option A and Option B. The score for this option will be shown below. The percentage indicates the probability that you will receive this score if you select this option.</p>
-        <p>At the same time, numbers 1 through 9 will appear randomly in the center of the screen. When you see the number 3, press the space bar. If you press the space bar on the wrong number or skip the 3, you will lose 5 points.</p>
+        <p2>In this experiment you are going to choose between Option A and Option B. The score for this option will be shown below. The percentage indicates the probability that you will receive this score if you select this option.</p2>
+        <p2>At the same time, numbers 1 through 9 will appear randomly in the center of the screen. When you see the number 3, press the space bar. If you press the space bar on the wrong number or skip the 3, you will lose 5 points.</p2>
         <p>Click "Start Practice" to start a few practice trials to get familiar with this!</p>
         <button class="btn" id="startPracticeBtn">Start Practice</button>
       `);
@@ -1137,7 +1137,7 @@
 
     function showSTInstructionScreen6_2() {
       const screen = createCenteredPanelScreen(`
-        <p>In this experiment you are going to choose between Option A and Option B. The score for this option is shown below. The percentage indicates the probability that you will receive this score if you select this option.</p>
+        <p2>In this experiment you are going to choose between Option A and Option B. The score for this option is shown below. The percentage indicates the probability that you will receive this score if you select this option.</p2>
         <p>Click "Start Practice" to start a few practice trials to get familiar with this!</p>
         <button class="btn" id="startPracticeBtn">Start Practice</button>
       `);
