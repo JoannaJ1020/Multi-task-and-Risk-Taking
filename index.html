@@ -449,7 +449,7 @@
   <div id="app"></div>
 
   <script>
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycby1b4FbX55WkJVXALnclx_04gTKAjHO8D71328QQlrxHI8t72LOAAWqn2LHpI5vrT6hgQ/exec";
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwNYzgYLU9tQm_dblk_PWzJmYzU4zpe0nJiIgYTfiMBGaVzyhQFg4KuvYQ5QXi_7vCdMA/exec";
 
     const CONFIG = {
       stPracticeTrials: 3,
@@ -468,7 +468,7 @@
       assignedTaskOrder: null,
       currentTotalPoints: 0,
       currentTask: null,
-      currentTrial: 0,
+      currentTrial: null,
       enteredText: '',
       isTransitioning: false,
       submittedTrialKeys: new Set(),
@@ -602,12 +602,6 @@
       const data = await getJSON({ action: 'get_all_raw_data' });
       if (!data.success) throw new Error(data.error || 'Failed to fetch raw data.');
       return Array.isArray(data.raw_data) ? data.raw_data : [];
-    }
-
-    async function fetchAllRankingRows() {
-      const data = await getJSON({ action: 'get_ranking', all: '1' });
-      if (!data.success) throw new Error(data.error || 'Failed to fetch ranking.');
-      return Array.isArray(data.ranking) ? data.ranking : [];
     }
 
     async function rebuildLeaderboardFromRawData() {
