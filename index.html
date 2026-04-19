@@ -457,7 +457,7 @@
       formalTrialsPerTask: 20,
       optionA: { points: 10, successProb: 0.8 },
       optionB: { minX: 1, maxX: 60, successProb: 0.2 },
-      mtDigitIntervalMs: 1000,
+      mtDigitIntervalMs: 1500,
       feedbackDisplayMs: 360,
       fadeBetweenTrialsMs: 180,
       leaderboardRefreshMs: 2500,
@@ -720,21 +720,25 @@
       state.digitCircleEl.classList.add('shake');
     }
 
-    function registerDigitFailure(applyPenalty) {
+    function registerDigitFailure(applyPenalty, onPenaltyApplied) {
       shakeDigitCircle();
-      if (applyPenalty) state.penaltyThisTrial += CONFIG.multitaskPenalty;
+      if (applyPenalty) {
+        state.penaltyThisTrial += CONFIG.multitaskPenalty;
+        state.currentTotalPoints -= CONFIG.multitaskPenalty;
+        if (typeof onPenaltyApplied === 'function') onPenaltyApplied(CONFIG.multitaskPenalty);
+      }
     }
 
-    function onDigitTick(applyPenalty) {
+    function onDigitTick(applyPenalty, onPenaltyApplied) {
       if (state.currentDigit === 3 && !state.digitThreeHandled) {
-        registerDigitFailure(applyPenalty);
+        registerDigitFailure(applyPenalty, onPenaltyApplied);
       }
       state.currentDigit = randomInt(0, 9);
       state.digitThreeHandled = false;
       if (state.digitCircleEl) state.digitCircleEl.textContent = String(state.currentDigit);
     }
 
-    function startDigitTask(circleEl, applyPenalty) {
+    function startDigitTask(circleEl, applyPenalty, onPenaltyApplied) {
       stopDigitTask();
       attachDigitCircle(circleEl);
       state.currentDigit = randomInt(0, 9);
@@ -746,12 +750,15 @@
         if (event.code !== 'Space') return;
         event.preventDefault();
 
-        if (state.currentDigit === 3) state.digitThreeHandled = true;
-        else registerDigitFailure(applyPenalty);
+        if (state.currentDigit === 3) {
+          state.digitThreeHandled = true;
+        } else {
+          registerDigitFailure(applyPenalty, onPenaltyApplied);
+        }
       };
 
       window.addEventListener('keydown', state.digitKeyListener);
-      state.digitTimer = setInterval(() => onDigitTick(applyPenalty), CONFIG.mtDigitIntervalMs);
+      state.digitTimer = setInterval(() => onDigitTick(applyPenalty, onPenaltyApplied), CONFIG.mtDigitIntervalMs);
     }
 
     function stopDigitTask() {
@@ -906,12 +913,21 @@
 
         if (withDigitTask) {
           const digitCircle = stage.querySelector('.digit-circle');
+          const handleImmediatePenalty = () => {
+            if (!isPractice && showRanking && rankingPanel) {
+              renderTopFive(rankingPanel, state.latestFastRanking.length ? state.latestFastRanking : state.latestRebuiltLeaderboard);
+            }
+          };
+
           if (trialIndexWithinTask === 1) {
-            startDigitTask(digitCircle, applyPenalty);
+            startDigitTask(digitCircle, applyPenalty, handleImmediatePenalty);
           } else {
             attachDigitCircle(digitCircle);
-            if (state.currentDigit === null) startDigitTask(digitCircle, applyPenalty);
-            else digitCircle.textContent = String(state.currentDigit);
+            if (state.currentDigit === null) {
+              startDigitTask(digitCircle, applyPenalty, handleImmediatePenalty);
+            } else {
+              digitCircle.textContent = String(state.currentDigit);
+            }
           }
         }
 
@@ -936,7 +952,7 @@
           chosenFb.classList.add('visible');
 
           if (!isPractice) {
-            state.currentTotalPoints += finalAward;
+            state.currentTotalPoints += baseAward;
             if (showRanking && rankingPanel) {
               renderTopFive(rankingPanel, state.latestFastRanking.length ? state.latestFastRanking : state.latestRebuiltLeaderboard);
             }
